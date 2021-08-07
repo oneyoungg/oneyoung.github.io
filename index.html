@@ -156,6 +156,92 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://oneyoung.top/SpringApplication-run%E5%8F%91%E7%94%9F%E4%BA%86%E4%BB%80%E4%B9%88/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="oneyoung">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="无涯">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/SpringApplication-run%E5%8F%91%E7%94%9F%E4%BA%86%E4%BB%80%E4%B9%88/" class="post-title-link" itemprop="url">SpringApplication.run发生了什么</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2021-08-07 15:13:19 / 修改时间：23:27:45" itemprop="dateCreated datePublished" datetime="2021-08-07T15:13:19+08:00">2021-08-07</time>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p><code>Spring boot</code>这个项目无疑是<code>Spring Project</code>最成功的项目，它把本来就很强大的<code>spring framework</code>进行进一步封装简化，遵从<code>约定大于配置的设计思想</code>，开箱即用。把spring推向了一个新的高度。</p>
+<p>今天我从spring boot的启动入口，分析一下它的启动流程。需要注意的是，我只讨论启动流程，其中很多细节不会展开。</p>
+<h2 id="启动一个Spring-Boot-Application"><a href="#启动一个Spring-Boot-Application" class="headerlink" title="启动一个Spring Boot Application"></a>启动一个<code>Spring Boot Application</code></h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> com.example.demo;</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> org.springframework.boot.SpringApplication;</span><br><span class="line"><span class="keyword">import</span> org.springframework.boot.autoconfigure.SpringBootApplication;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@author</span> oneyoung</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@SpringBootApplication</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">DemoApplication</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        SpringApplication.run(DemoApplication.class, args);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>启动一个<code>spring boot</code>应用就是这么简洁优雅，只需要简单几行代码，一个注解、一个类、一个<code>main</code>方法、一个静态方法。</p>
+<h2 id="SpringApplication-run-Class-lt-gt-String…"><a href="#SpringApplication-run-Class-lt-gt-String…" class="headerlink" title="SpringApplication#run(Class&lt;?&gt;, String…)"></a>SpringApplication#run(Class&lt;?&gt;, String…)</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Static helper that can be used to run a &#123;<span class="doctag">@link</span> SpringApplication&#125; from the</span></span><br><span class="line"><span class="comment"> * specified source using default settings.</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> primarySource the primary source to load</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> args the application arguments (usually passed from a Java main method)</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span> the running &#123;<span class="doctag">@link</span> ApplicationContext&#125;</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> ConfigurableApplicationContext <span class="title">run</span><span class="params">(Class&lt;?&gt; primarySource, String... args)</span> </span>&#123;</span><br><span class="line">	<span class="keyword">return</span> run(<span class="keyword">new</span> Class&lt;?&gt;[] &#123; primarySource &#125;, args);</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p><code>run</code>有多个方法重载。实际调用的是下面这个</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Static helper that can be used to run a &#123;<span class="doctag">@link</span> SpringApplication&#125; from the</span></span><br><span class="line"><span class="comment"> * specified sources using default settings and user supplied arguments.</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> primarySources the primary sources to load</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> args the application arguments (usually passed from a Java main method)</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span> the running &#123;<span class="doctag">@link</span> ApplicationContext&#125;</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> ConfigurableApplicationContext <span class="title">run</span><span class="params">(Class&lt;?&gt;[] primarySources, String[] args)</span> </span>&#123;</span><br><span class="line">	<span class="keyword">return</span> <span class="keyword">new</span> SpringApplication(primarySources).run(args);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>首先对<code>SpringApplication</code>进行实例化，传入启动类的<code>Class</code>,然后调用<code>run</code>的另外一个实例方法（注意这个<code>run</code>方法是非<code>static</code>）。方法最后返回<code>ApplicationContext</code>，也就是广义上的<code>IOC</code>容器对象。</p>
+<p>那我们先看看<code>SpringApplication</code>是这么实例化的。</p>
+<h2 id="SpringApplication的实例化"><a href="#SpringApplication的实例化" class="headerlink" title="SpringApplication的实例化"></a><code>SpringApplication</code>的实例化</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Create a new &#123;<span class="doctag">@link</span> SpringApplication&#125; instance. The application context will load</span></span><br><span class="line"><span class="comment"> * beans from the specified primary sources (see &#123;<span class="doctag">@link</span> SpringApplication class-level&#125;</span></span><br><span class="line"><span class="comment"> * documentation for details. The instance can be customized before calling</span></span><br><span class="line"><span class="comment"> * &#123;<span class="doctag">@link</span> #run(String...)&#125;.</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> resourceLoader the resource loader to use</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> primarySources the primary bean sources</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@see</span> #run(Class, String[])</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@see</span> #setSources(Set)</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="meta">@SuppressWarnings(&#123; &quot;unchecked&quot;, &quot;rawtypes&quot; &#125;)</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="title">SpringApplication</span><span class="params">(ResourceLoader resourceLoader, Class&lt;?&gt;... primarySources)</span> </span>&#123;</span><br><span class="line">	<span class="keyword">this</span>.resourceLoader = resourceLoader;</span><br><span class="line">	Assert.notNull(primarySources, <span class="string">&quot;PrimarySources must not be null&quot;</span>);</span><br><span class="line">	<span class="keyword">this</span>.primarySources = <span class="keyword">new</span> LinkedHashSet&lt;&gt;(Arrays.asList(primarySources));</span><br><span class="line">	<span class="keyword">this</span>.webApplicationType = WebApplicationType.deduceFromClasspath();</span><br><span class="line">	<span class="keyword">this</span>.bootstrapRegistryInitializers = getBootstrapRegistryInitializersFromSpringFactories();</span><br><span class="line">	setInitializers((Collection) getSpringFactoriesInstances(ApplicationContextInitializer.class));</span><br><span class="line">	setListeners((Collection) getSpringFactoriesInstances(ApplicationListener.class));</span><br><span class="line">	<span class="keyword">this</span>.mainApplicationClass = deduceMainApplicationClass();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>同样的，<code>SpringApplication</code>有多个重载<code>构造器</code>，最终调用的都是上面这个<code>构造器</code>。</p>
+<p>源码注释写到，创建一个<code>SpringApplication</code>对象，应用上下文会加载启动主类的<code>bean</code>，实例可以在执行run方法之前自定义。</p>
+<p><code>WebApplicationType.deduceFromClasspath()</code>这个方法可以根据启动类路径推断出该应用的类型。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * The application should not run as a web application and should not start an</span></span><br><span class="line"><span class="comment"> * embedded web server.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line">NONE,</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * The application should run as a servlet-based web application and should start an</span></span><br><span class="line"><span class="comment"> * embedded servlet web server.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line">SERVLET,</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * The application should run as a reactive web application and should start an</span></span><br><span class="line"><span class="comment"> * embedded reactive web server.</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line">REACTIVE;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+<p>下面这个方法从<code>spring factories</code>获取<code>BootstrapRegistryInitializer</code>实例</p>
+<blockquote>
+<p><code>spring factories</code>是<code>spring boot</code>设计的精髓所在，拿spring boot starter这个包举例子。</p>
+<p>路径<code>spring-boot-2.5.3.jar/META-INF/spring.factories </code> <code>spring.factories</code>里面定义了很多需要加载的类,spring boot在启动的时候会扫描路径下面相关的<code>spring.factories</code>配置文件，并进行实话注入到IOC。</p>
+<p>如果你写过<code>Starter</code>，这个肯定很熟悉！</p>
+<figure class="highlight properties"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># Logging Systems</span></span><br><span class="line"><span class="meta">org.springframework.boot.logging.LoggingSystemFactory</span>=<span class="string">\</span></span><br><span class="line">org.springframework.boot.logging.logback.LogbackLoggingSystem.Factory,\</span><br><span class="line">org.springframework.boot.logging.log4j2.Log4J2LoggingSystem.Factory,\</span><br><span class="line"><span class="attr">org.springframework.boot.logging.java.JavaLoggingSystem.Factory</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># PropertySource Loaders</span></span><br><span class="line"><span class="meta">org.springframework.boot.env.PropertySourceLoader</span>=<span class="string">\</span></span><br><span class="line">org.springframework.boot.env.PropertiesPropertySourceLoader,\</span><br><span class="line"><span class="attr">org.springframework.boot.env.YamlPropertySourceLoader</span></span><br></pre></td></tr></table></figure>
+
+<p>加载过程：</p>
+<p><code>org.springframework.core.io.support.SpringFactoriesLoader#loadFactories</code></p>
+<p>有兴趣的同学可以自行阅读源码</p>
+</blockquote>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@SuppressWarnings(&quot;deprecation&quot;)</span></span><br><span class="line"><span class="function"><span class="keyword">private</span> List&lt;BootstrapRegistryInitializer&gt; <span class="title">getBootstrapRegistryInitializersFromSpringFactories</span><span class="params">()</span> </span>&#123;</span><br><span class="line">	ArrayList&lt;BootstrapRegistryInitializer&gt; initializers = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">	getSpringFactoriesInstances(Bootstrapper.class).stream()</span><br><span class="line">			.map((bootstrapper) -&gt; ((BootstrapRegistryInitializer) bootstrapper::initialize))</span><br><span class="line">			.forEach(initializers::add);</span><br><span class="line">	initializers.addAll(getSpringFactoriesInstances(BootstrapRegistryInitializer.class));</span><br><span class="line">	<span class="keyword">return</span> initializers;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>然后先后加载了<code>ApplicationContextInitializer</code>、<code>ApplicationListener</code>并初始化为成员变量</p>
+<h2 id="run"><a href="#run" class="headerlink" title="run"></a>run</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Run the Spring application, creating and refreshing a new</span></span><br><span class="line"><span class="comment"> * &#123;<span class="doctag">@link</span> ApplicationContext&#125;.</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> args the application arguments (usually passed from a Java main method)</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span> a running &#123;<span class="doctag">@link</span> ApplicationContext&#125;</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> ConfigurableApplicationContext <span class="title">run</span><span class="params">(String... args)</span> </span>&#123;</span><br><span class="line">   <span class="comment">// 时间计时器</span></span><br><span class="line">	StopWatch stopWatch = <span class="keyword">new</span> StopWatch();</span><br><span class="line">	stopWatch.start();</span><br><span class="line">   <span class="comment">// 创建默认 DefaultBootstrapContext 并初始化 bootstrapRegistryInitializers</span></span><br><span class="line">	DefaultBootstrapContext bootstrapContext = createBootstrapContext();</span><br><span class="line">	ConfigurableApplicationContext context = <span class="keyword">null</span>;</span><br><span class="line">	configureHeadlessProperty();</span><br><span class="line">   <span class="comment">// 获取 SpringApplicationRunListeners 也是从spring.factories加载</span></span><br><span class="line">	SpringApplicationRunListeners listeners = getRunListeners(args);</span><br><span class="line">   <span class="comment">// 开启监听器</span></span><br><span class="line">	listeners.starting(bootstrapContext, <span class="keyword">this</span>.mainApplicationClass);</span><br><span class="line">	<span class="keyword">try</span> &#123;</span><br><span class="line">     <span class="comment">// 配置spring环境</span></span><br><span class="line">		ApplicationArguments applicationArguments = <span class="keyword">new</span> DefaultApplicationArguments(args);</span><br><span class="line">     <span class="comment">// 初始化env</span></span><br><span class="line">		ConfigurableEnvironment environment = prepareEnvironment(listeners, bootstrapContext, applicationArguments);</span><br><span class="line">		configureIgnoreBeanInfo(environment);</span><br><span class="line">		Banner printedBanner = printBanner(environment);</span><br><span class="line">		context = createApplicationContext();</span><br><span class="line">		context.setApplicationStartup(<span class="keyword">this</span>.applicationStartup);</span><br><span class="line">		prepareContext(bootstrapContext, context, environment, listeners, applicationArguments, printedBanner);</span><br><span class="line">		refreshContext(context);</span><br><span class="line">		afterRefresh(context, applicationArguments);</span><br><span class="line">		stopWatch.stop();</span><br><span class="line">		<span class="keyword">if</span> (<span class="keyword">this</span>.logStartupInfo) &#123;</span><br><span class="line">			<span class="keyword">new</span> StartupInfoLogger(<span class="keyword">this</span>.mainApplicationClass).logStarted(getApplicationLog(), stopWatch);</span><br><span class="line">		&#125;</span><br><span class="line">		listeners.started(context);</span><br><span class="line">		callRunners(context, applicationArguments);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">catch</span> (Throwable ex) &#123;</span><br><span class="line">		handleRunFailure(context, ex, listeners);</span><br><span class="line">		<span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(ex);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	<span class="keyword">try</span> &#123;</span><br><span class="line">		listeners.running(context);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">catch</span> (Throwable ex) &#123;</span><br><span class="line">		handleRunFailure(context, ex, <span class="keyword">null</span>);</span><br><span class="line">		<span class="keyword">throw</span> <span class="keyword">new</span> IllegalStateException(ex);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> context;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://oneyoung.top/Spring-Boot%E5%BF%AB%E9%80%9F%E9%9B%86%E6%88%90Swagger/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1373,94 +1459,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://oneyoung.top/Spring-Bean-%E5%91%BD%E5%90%8D%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="oneyoung">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="无涯">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/Spring-Bean-%E5%91%BD%E5%90%8D%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/" class="post-title-link" itemprop="url">Spring Bean 命名源码分析</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2021-01-19 23:05:22" itemprop="dateCreated datePublished" datetime="2021-01-19T23:05:22+08:00">2021-01-19</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2021-08-01 14:13:47" itemprop="dateModified" datetime="2021-08-01T14:13:47+08:00">2021-08-01</time>
-              </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>Spring在进行Bean注册的时候需要有一个唯一标识，这个标识也成为<code>BeanName</code>。在进行Bean注册时，这个<code>id</code>并不必填项，它可以由Spring自动生成。下面就来讨论其中一种生成策略。</p>
-<h2 id="BeanNameGenerator"><a href="#BeanNameGenerator" class="headerlink" title="BeanNameGenerator"></a>BeanNameGenerator</h2><p><code>org.springframework.beans.factory.support.BeanNameGenerator</code>这个接口就是Spring Bean名称生成器。我们看下源码</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">interface</span> <span class="title">BeanNameGenerator</span> </span>&#123;</span><br><span class="line">    </span><br><span class="line">	<span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * Generate a bean name for the given bean definition.</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@param</span> definition the bean definition to generate a name for</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@param</span> registry the bean definition registry that the given definition</span></span><br><span class="line"><span class="comment">	 * is supposed to be registered with</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@return</span> the generated bean name</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="function">String <span class="title">generateBeanName</span><span class="params">(BeanDefinition definition, BeanDefinitionRegistry registry)</span></span>;</span><br><span class="line"></span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-<p>该接口只定义了一个方法用于获取BeanName，需要传入<code>BeanDefinition</code> <code>BeanDefinitionRegistry</code></p>
-<p>这里简单说明下为什么需要这两个参数</p>
-<ul>
-<li><code>BeanDefinition</code>用于获取该Bean的<code>ClassName</code></li>
-<li><code>BeanDefinitionRegistry</code>用于判断生成的<code>BeanName</code>是否已注册，如果已注册会附加类似<code>#0</code>这样的序列号</li>
-</ul>
-<h2 id="BeanNameGenerator-实现类"><a href="#BeanNameGenerator-实现类" class="headerlink" title="BeanNameGenerator 实现类"></a>BeanNameGenerator 实现类</h2><p>这个接口有两个实现 <code>DefaultBeanNameGenerator</code> <code>AnnotationBeanNameGenerator</code></p>
-<p>这里我们暂时只讨论前者，这个名称生成器的默认实现</p>
-<h2 id="DefaultBeanNameGenerator"><a href="#DefaultBeanNameGenerator" class="headerlink" title="DefaultBeanNameGenerator"></a>DefaultBeanNameGenerator</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Default implementation of the &#123;<span class="doctag">@link</span> BeanNameGenerator&#125; interface, delegating to</span></span><br><span class="line"><span class="comment"> * &#123;<span class="doctag">@link</span> BeanDefinitionReaderUtils#generateBeanName(BeanDefinition, BeanDefinitionRegistry)&#125;.</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@author</span> Juergen Hoeller</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@since</span> 2.0.3</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">DefaultBeanNameGenerator</span> <span class="keyword">implements</span> <span class="title">BeanNameGenerator</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">	<span class="comment">/**</span></span><br><span class="line"><span class="comment">	 * A convenient constant for a default &#123;<span class="doctag">@code</span> DefaultBeanNameGenerator&#125; instance,</span></span><br><span class="line"><span class="comment">	 * as used for &#123;<span class="doctag">@link</span> AbstractBeanDefinitionReader&#125; setup.</span></span><br><span class="line"><span class="comment">	 * <span class="doctag">@since</span> 5.2</span></span><br><span class="line"><span class="comment">	 */</span></span><br><span class="line">	<span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> DefaultBeanNameGenerator INSTANCE = <span class="keyword">new</span> DefaultBeanNameGenerator();</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">	<span class="meta">@Override</span></span><br><span class="line">	<span class="function"><span class="keyword">public</span> String <span class="title">generateBeanName</span><span class="params">(BeanDefinition definition, BeanDefinitionRegistry registry)</span> </span>&#123;</span><br><span class="line">		<span class="keyword">return</span> BeanDefinitionReaderUtils.generateBeanName(definition, registry);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>这个默认实现类，存在一个单例对象，看doc是5.2才加的，因为要兼容之前的版本，所以没有私有化构造器</p>
-<p>该实现类，委托给<code>BeanDefinitionReaderUtils</code>实现功能</p>
-<h2 id="BeanDefinitionReaderUtils"><a href="#BeanDefinitionReaderUtils" class="headerlink" title="BeanDefinitionReaderUtils"></a>BeanDefinitionReaderUtils</h2><p>真正的实现是这个工具类</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> String <span class="title">generateBeanName</span><span class="params">(</span></span></span><br><span class="line"><span class="function"><span class="params">		BeanDefinition definition, BeanDefinitionRegistry registry, <span class="keyword">boolean</span> isInnerBean)</span></span></span><br><span class="line"><span class="function">		<span class="keyword">throws</span> BeanDefinitionStoreException </span>&#123;</span><br><span class="line"></span><br><span class="line">	String generatedBeanName = definition.getBeanClassName();</span><br><span class="line">	<span class="keyword">if</span> (generatedBeanName == <span class="keyword">null</span>) &#123;</span><br><span class="line">		<span class="keyword">if</span> (definition.getParentName() != <span class="keyword">null</span>) &#123;</span><br><span class="line">			generatedBeanName = definition.getParentName() + <span class="string">&quot;$child&quot;</span>;</span><br><span class="line">		&#125;</span><br><span class="line">		<span class="keyword">else</span> <span class="keyword">if</span> (definition.getFactoryBeanName() != <span class="keyword">null</span>) &#123;</span><br><span class="line">			generatedBeanName = definition.getFactoryBeanName() + <span class="string">&quot;$created&quot;</span>;</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">if</span> (!StringUtils.hasText(generatedBeanName)) &#123;</span><br><span class="line">		<span class="keyword">throw</span> <span class="keyword">new</span> BeanDefinitionStoreException(<span class="string">&quot;Unnamed bean definition specifies neither &quot;</span> +</span><br><span class="line">				<span class="string">&quot;&#x27;class&#x27; nor &#x27;parent&#x27; nor &#x27;factory-bean&#x27; - can&#x27;t generate bean name&quot;</span>);</span><br><span class="line">	&#125;</span><br><span class="line"></span><br><span class="line">	String id = generatedBeanName;</span><br><span class="line">	<span class="keyword">if</span> (isInnerBean) &#123;</span><br><span class="line">		<span class="comment">// Inner bean: generate identity hashcode suffix.</span></span><br><span class="line">		id = generatedBeanName + GENERATED_BEAN_NAME_SEPARATOR + ObjectUtils.getIdentityHexString(definition);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">else</span> &#123;</span><br><span class="line">		<span class="comment">// Top-level bean: use plain class name with unique suffix if necessary.</span></span><br><span class="line">		<span class="keyword">return</span> uniqueBeanName(generatedBeanName, registry);</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> id;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-
-
-<p>这里可以看出id是直接取的Bean的ClassName，如果是非内部类，会做唯一性校验</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> String <span class="title">uniqueBeanName</span><span class="params">(String beanName, BeanDefinitionRegistry registry)</span> </span>&#123;</span><br><span class="line">	String id = beanName;</span><br><span class="line">	<span class="keyword">int</span> counter = -<span class="number">1</span>;</span><br><span class="line"></span><br><span class="line">	<span class="comment">// Increase counter until the id is unique.</span></span><br><span class="line">	<span class="keyword">while</span> (counter == -<span class="number">1</span> || registry.containsBeanDefinition(id)) &#123;</span><br><span class="line">		counter++;</span><br><span class="line">		id = beanName + GENERATED_BEAN_NAME_SEPARATOR + counter;</span><br><span class="line">	&#125;</span><br><span class="line">	<span class="keyword">return</span> id;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-<p>每个beanName都会被加上#0，然后去容器里面看是否被注册，如果被组成则序号加一</p>
-<blockquote>
-<p>写得比较粗糙，有时间会详细写一下</p>
-</blockquote>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1530,14 +1528,14 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">13</span>
+          <span class="site-state-item-count">14</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">4</span>
+        <span class="site-state-item-count">5</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
