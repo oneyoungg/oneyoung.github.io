@@ -156,6 +156,80 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://oneyoung.top/%E8%B8%A9%E5%9D%91-spring%E4%BA%8B%E5%8A%A1%E5%A4%B1%E6%95%88/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="oneyoung">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="无涯">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/%E8%B8%A9%E5%9D%91-spring%E4%BA%8B%E5%8A%A1%E5%A4%B1%E6%95%88/" class="post-title-link" itemprop="url">踩坑-spring事务失效</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+              
+
+              <time title="创建时间：2021-08-11 10:14:05 / 修改时间：19:13:03" itemprop="dateCreated datePublished" datetime="2021-08-11T10:14:05+08:00">2021-08-11</time>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>有个多层业务，在进行新增操作的时候，需要操作多张表，然后是多段提交，分别执行了三条SQL。其中两条SQL是抽取的公共方法执行的。在线上环境发现，执行后两条SQL出错，而前一条SQL并没有触发回滚。</p>
+<h2 id="排查"><a href="#排查" class="headerlink" title="排查"></a>排查</h2><p>我确认自己是开启了事务的，使用基于注解的声明式事务配置。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Service</span></span><br><span class="line"><span class="meta">@Transactional(rollbackFor = Exception.class)</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ContentProduceServiceImpl</span> <span class="keyword">implements</span> <span class="title">ContentProduceService</span> </span>&#123;</span><br><span class="line">  <span class="comment">// ...</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>注解<code>@Transactional</code>标注在类上面，类的<code>public</code>方法会默认继承这个注解，也就是会开启事务控制。同时我也指定了回滚的超类异常<code>Exception</code>，遇到异常会正常回滚才对。</p>
+<p>于是我进行了单元测试，确认后两条SQL执行出现了异常，而且异常被<code>spring</code>包装成了<code>RuntimeException</code>，然而并没有触发回滚。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Caused by: com.mysql.cj.jdbc.exceptions.MysqlDataTruncation: Data truncation: Data too long for column &#39;name&#39; at row 1</span><br><span class="line">	at com.mysql.cj.jdbc.exceptions.SQLExceptionsMapping.translateException(SQLExceptionsMapping.java:104)</span><br></pre></td></tr></table></figure>
+<p>思来想去，突然<strong>灵感一闪</strong>！那肯定是事务管理器没有捕获这个异常，被我写的异常以及日志AOP先拦截处理掉了。</p>
+<blockquote>
+<p>Spring的声明式事务是基于切面编程实现的，在Spring里里面是使用ASPECT实现的AOP。</p>
+</blockquote>
+<h2 id="解决"><a href="#解决" class="headerlink" title="解决"></a>解决</h2><h3 id="方案一：去掉异常处理AOP"><a href="#方案一：去掉异常处理AOP" class="headerlink" title="方案一：去掉异常处理AOP"></a>方案一：去掉异常处理AOP</h3><p>最简单粗暴的方法就是直接去掉异常处理的AOP</p>
+<p>再去掉自定义的AOP后，顺利抛出异常，线程中止，事务成功回滚。缺点是没了自定义的异常处理。</p>
+<h3 id="方案二：遇到异常手动回滚"><a href="#方案二：遇到异常手动回滚" class="headerlink" title="方案二：遇到异常手动回滚"></a>方案二：遇到异常手动回滚</h3><p>这种方案既能手动捕获异常进行异常处理，也能回滚事务。能解决方案一的痛点。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> Result&lt;Boolean&gt; <span class="title">createContent</span><span class="params">(ContentProduceShowDTO dto)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      <span class="comment">// do...</span></span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception exception) &#123;</span><br><span class="line">      <span class="comment">// 获取当前线程的事务，进行手动回滚</span></span><br><span class="line">        TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();</span><br><span class="line">        <span class="keyword">return</span> Results.failSystemError(exception.getCause().getMessage());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>获取当前线程的事务，进行手动回滚，需要注意的是，要保证当前方法开启了事务，不然会抛出<code>NoTransactionException</code>异常。</p>
+<h3 id="方案三：在异常AOP里面处理异常回滚"><a href="#方案三：在异常AOP里面处理异常回滚" class="headerlink" title="方案三：在异常AOP里面处理异常回滚"></a>方案三：在异常AOP里面处理异常回滚</h3><p>在异常AOP里面处理异常回滚，相比方案二，不用写重复的冗余代码。也更合理。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> Object <span class="title">processService0</span><span class="params">(ProceedingJoinPoint joinPoint)</span> </span>&#123;</span><br><span class="line">    printEntranceLog(joinPoint);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">long</span> startTime = System.currentTimeMillis();</span><br><span class="line">    Result&lt;Object&gt; result = <span class="keyword">null</span>;</span><br><span class="line">    Throwable throwable = <span class="keyword">null</span>;</span><br><span class="line">    <span class="comment">// 只能处理这一类返回值类型的</span></span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        Object object = joinPoint.proceed();</span><br><span class="line">        <span class="keyword">if</span> (object <span class="keyword">instanceof</span> Result) &#123;</span><br><span class="line">            result = (Result&lt;Object&gt;) object;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> object;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Throwable e) &#123;</span><br><span class="line">      <span class="comment">// do..</span></span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">             TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception exception) &#123;</span><br><span class="line">            <span class="keyword">return</span> result;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">      <span class="comment">// do...</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://oneyoung.top/SpringApplication-run%E5%8F%91%E7%94%9F%E4%BA%86%E4%BB%80%E4%B9%88/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1376,89 +1450,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://oneyoung.top/Spring-Bean-%E6%B3%A8%E8%A7%A3%E6%B3%A8%E5%85%A5%E5%91%BD%E5%90%8D%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="oneyoung">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="无涯">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/Spring-Bean-%E6%B3%A8%E8%A7%A3%E6%B3%A8%E5%85%A5%E5%91%BD%E5%90%8D%E6%BA%90%E7%A0%81%E5%88%86%E6%9E%90/" class="post-title-link" itemprop="url">Spring Bean 注解注入命名源码分析</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2021-01-20 22:25:09" itemprop="dateCreated datePublished" datetime="2021-01-20T22:25:09+08:00">2021-01-20</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2021-08-01 14:13:47" itemprop="dateModified" datetime="2021-08-01T14:13:47+08:00">2021-08-01</time>
-              </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>上篇文章讲到了XML配置方式在不指定<code>ID</code>的情况下，Spring的<code>BeanName</code>。今天来谈论下，现代Spring中Bean注册使用最多的方式—<code>注解</code>。注解方式生成的<code>BeanName</code>策略又是怎样的呢。</p>
-<h2 id="Spring-常用注册Bean注解"><a href="#Spring-常用注册Bean注解" class="headerlink" title="Spring 常用注册Bean注解"></a>Spring 常用注册Bean注解</h2><ul>
-<li><code>@Component</code>、<code>@Service</code>、<code>@Repository</code>、<code>@Controller</code> 这四个注解用于类上，实质上是一样的，能够注册当前类到容器，<code>value</code>属性就是<code>BeanName</code></li>
-<li><code>@Configuration</code>这个注解同样用作类上，不同的是，这个注解通常与<code>@Bean</code>配合使用，注册方法的返回类型对象，用作配置。</li>
-<li><code>@Bean</code> 用于方法上，该方法需要在<code>@Configuration</code>标注的类里面，且方法必须为<code>public</code></li>
-</ul>
-<h2 id="AnnotationBeanNameGenerator"><a href="#AnnotationBeanNameGenerator" class="headerlink" title="AnnotationBeanNameGenerator"></a>AnnotationBeanNameGenerator</h2><p><code>@Component</code>、<code>@Service</code>、<code>@Repository</code>、<code>@Controller</code> 、<code>@Configuration</code></p>
-<p>这五个注解注册的Bean名称都由<code>AnnotationBeanNameGenerator</code>生成</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">AnnotationBeanNameGenerator</span> <span class="keyword">implements</span> <span class="title">BeanNameGenerator</span> </span>&#123;</span><br><span class="line"></span><br><span class="line"> <span class="comment">/**</span></span><br><span class="line"><span class="comment">  * A convenient constant for a default &#123;<span class="doctag">@code</span> AnnotationBeanNameGenerator&#125; instance,</span></span><br><span class="line"><span class="comment">  * as used for component scanning purposes.</span></span><br><span class="line"><span class="comment">  * <span class="doctag">@since</span> 5.2</span></span><br><span class="line"><span class="comment">  */</span></span><br><span class="line"> <span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">final</span> AnnotationBeanNameGenerator INSTANCE = <span class="keyword">new</span> AnnotationBeanNameGenerator();</span><br><span class="line"></span><br><span class="line"> <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> String COMPONENT_ANNOTATION_CLASSNAME = <span class="string">&quot;org.springframework.stereotype.Component&quot;</span>;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"> <span class="meta">@Override</span></span><br><span class="line"> <span class="function"><span class="keyword">public</span> String <span class="title">generateBeanName</span><span class="params">(BeanDefinition definition, BeanDefinitionRegistry registry)</span> </span>&#123;</span><br><span class="line">  <span class="keyword">if</span> (definition <span class="keyword">instanceof</span> AnnotatedBeanDefinition) &#123;</span><br><span class="line">   String beanName = determineBeanNameFromAnnotation((AnnotatedBeanDefinition) definition);</span><br><span class="line">   <span class="keyword">if</span> (StringUtils.hasText(beanName)) &#123;</span><br><span class="line">    <span class="comment">// Explicit bean name found.</span></span><br><span class="line">    <span class="keyword">return</span> beanName;</span><br><span class="line">   &#125;</span><br><span class="line">  &#125;</span><br><span class="line">  <span class="comment">// Fallback: generate a unique default bean name.</span></span><br><span class="line">  <span class="keyword">return</span> buildDefaultBeanName(definition, registry);</span><br><span class="line"> &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p>该生成器同样实现了父类<code>BeanNameGenerator</code>的<code>generateBeanName</code>方法，与默认实现不同的是没有委托给其它类实现功能，而在自身实现，同样存在一个单列对象。</p>
-<p>可以看到命名逻辑先是从注解的元信息获取配置的<code>BeanName</code>,在获取不到的情况下回去调用<code>buildDefaultBeanName</code>生成一个名称。</p>
-<p>下面我们看下生成逻辑</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Derive a default bean name from the given bean definition.</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;The default implementation delegates to &#123;<span class="doctag">@link</span> #buildDefaultBeanName(BeanDefinition)&#125;.</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> definition the bean definition to build a bean name for</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> registry the registry that the given bean definition is being registered with</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span> the default bean name (never &#123;<span class="doctag">@code</span> null&#125;)</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">protected</span> String <span class="title">buildDefaultBeanName</span><span class="params">(BeanDefinition definition, BeanDefinitionRegistry registry)</span> </span>&#123;</span><br><span class="line"> <span class="keyword">return</span> buildDefaultBeanName(definition);</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * Derive a default bean name from the given bean definition.</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;The default implementation simply builds a decapitalized version</span></span><br><span class="line"><span class="comment"> * of the short class name: e.g. &quot;mypackage.MyJdbcDao&quot; -&gt; &quot;myJdbcDao&quot;.</span></span><br><span class="line"><span class="comment"> * &lt;p&gt;Note that inner classes will thus have names of the form</span></span><br><span class="line"><span class="comment"> * &quot;outerClassName.InnerClassName&quot;, which because of the period in the</span></span><br><span class="line"><span class="comment"> * name may be an issue if you are autowiring by name.</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> definition the bean definition to build a bean name for</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span> the default bean name (never &#123;<span class="doctag">@code</span> null&#125;)</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="function"><span class="keyword">protected</span> String <span class="title">buildDefaultBeanName</span><span class="params">(BeanDefinition definition)</span> </span>&#123;</span><br><span class="line"> String beanClassName = definition.getBeanClassName();</span><br><span class="line"> Assert.state(beanClassName != <span class="keyword">null</span>, <span class="string">&quot;No bean class name set&quot;</span>);</span><br><span class="line"> String shortClassName = ClassUtils.getShortName(beanClassName);</span><br><span class="line"> <span class="keyword">return</span> Introspector.decapitalize(shortClassName);</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-<p>该方法委托给另外一个重载方法实现，先获取该Bean的<code>ClassName</code>,然后获取短的命称，即类名，最后<code>decapitalize</code>把类名首字母变为小写。</p>
-<p>使用采用这种方式生成的<code>BeanName</code>就是类名首字母小写。例如<code>com.oneyoung.User -&gt; user</code></p>
-<h2 id="Bean-名称生成策略"><a href="#Bean-名称生成策略" class="headerlink" title="@Bean 名称生成策略"></a>@Bean 名称生成策略</h2><p>使用<code>@Bean</code>方式注册到容器的命名方式与上面有所不同。</p>
-<p>加载实现类是<code>ConfigurationClassBeanDefinitionReader</code>专门用来处理配置类的Bean</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">AnnotationAttributes bean = AnnotationConfigUtils.attributesFor(metadata, Bean.class);</span><br><span class="line">Assert.state(bean != <span class="keyword">null</span>, <span class="string">&quot;No @Bean annotation attributes&quot;</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">// Consider name and any aliases</span></span><br><span class="line">List&lt;String&gt; names = <span class="keyword">new</span> ArrayList&lt;&gt;(Arrays.asList(bean.getStringArray(<span class="string">&quot;name&quot;</span>)));</span><br><span class="line">String beanName = (!names.isEmpty() ? names.remove(<span class="number">0</span>) : methodName);</span><br></pre></td></tr></table></figure>
-<p>这部分代码可以看出，先去注解的value配置，如果为空则取方法名。所以默认的<code>beanName</code>就是方法名。</p>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1528,7 +1519,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">14</span>
+          <span class="site-state-item-count">15</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
