@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.3.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"oneyoung.top","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"right","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":true,"scrollpercent":true},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="前言我们都知道Java属于编译型语言,即源码需要经过编译成字节码然后运行于JVM 我们也知道，代码一旦编写完成，编译出的.class文件是一定的。这里也就是静态编译。 那我们需要在运行时编译并加载应该怎么办呢，存在如下场景  我们熟知的类似LeetCode这种测评平台，需要执行用户输入的代码。 服务器需要动态加载某些类文件进行编译。  那么我们就要使用Java的动态编译能力，在运行时编译代码并加载">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Java动态编译">
+<meta property="og:url" content="https://oneyoung.top/Java%E5%8A%A8%E6%80%81%E7%BC%96%E8%AF%91/index.html">
+<meta property="og:site_name" content="无涯">
+<meta property="og:description" content="前言我们都知道Java属于编译型语言,即源码需要经过编译成字节码然后运行于JVM 我们也知道，代码一旦编写完成，编译出的.class文件是一定的。这里也就是静态编译。 那我们需要在运行时编译并加载应该怎么办呢，存在如下场景  我们熟知的类似LeetCode这种测评平台，需要执行用户输入的代码。 服务器需要动态加载某些类文件进行编译。  那么我们就要使用Java的动态编译能力，在运行时编译代码并加载">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://oneyoung.top/Java%E5%8A%A8%E6%80%81%E7%BC%96%E8%AF%91/%E6%9C%AA%E5%91%BD%E5%90%8D2.001-9747789-9747793.jpeg">
+<meta property="og:image" content="https://oneyoung.top/Java%E5%8A%A8%E6%80%81%E7%BC%96%E8%AF%91/image-20220412152021665-9748023.png">
+<meta property="og:image" content="https://oneyoung.top/Java%E5%8A%A8%E6%80%81%E7%BC%96%E8%AF%91/image-20220412160252209.png">
+<meta property="article:published_time" content="2022-04-08T03:35:50.000Z">
+<meta property="article:modified_time" content="2022-04-12T08:24:41.605Z">
+<meta property="article:author" content="oneyoung">
+<meta property="article:tag" content="Java">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://oneyoung.top/Java%E5%8A%A8%E6%80%81%E7%BC%96%E8%AF%91/%E6%9C%AA%E5%91%BD%E5%90%8D2.001-9747789-9747793.jpeg">
+
+<link rel="canonical" href="https://oneyoung.top/Java%E5%8A%A8%E6%80%81%E7%BC%96%E8%AF%91/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>Java动态编译 | 无涯</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">无涯</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+      <p class="site-subtitle" itemprop="description">无所谓无 无所谓有</p>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a>
+
+  </li>
+        <li class="menu-item menu-item-tags">
+
+    <a href="/tags/" rel="section"><i class="fa fa-tags fa-fw"></i>标签</a>
+
+  </li>
+        <li class="menu-item menu-item-about">
+
+    <a href="/about/" rel="section"><i class="fa fa-user fa-fw"></i>关于</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="reading-progress-bar"></div>
+
+  <a href="https://github.com/oneyoungg" class="github-corner" title="Follow me on GitHub" aria-label="Follow me on GitHub" rel="noopener" target="_blank"><svg width="80" height="80" viewBox="0 0 250 250" aria-hidden="true"><path d="M0,0 L115,115 L130,115 L142,142 L250,250 L250,0 Z"></path><path d="M128.3,109.0 C113.8,99.7 119.0,89.6 119.0,89.6 C122.0,82.7 120.5,78.6 120.5,78.6 C119.2,72.0 123.4,76.3 123.4,76.3 C127.3,80.9 125.5,87.3 125.5,87.3 C122.9,97.6 130.6,101.9 134.4,103.2" fill="currentColor" style="transform-origin: 130px 106px;" class="octo-arm"></path><path d="M115.0,115.0 C114.9,115.1 118.7,116.5 119.8,115.4 L133.7,101.6 C136.9,99.2 139.9,98.4 142.2,98.6 C133.8,88.0 127.5,74.4 143.8,58.0 C148.5,53.4 154.0,51.2 159.7,51.0 C160.3,49.4 163.2,43.6 171.4,40.1 C171.4,40.1 176.1,42.5 178.8,56.2 C183.1,58.6 187.2,61.8 190.9,65.4 C194.5,69.0 197.7,73.2 200.1,77.6 C213.8,80.2 216.3,84.9 216.3,84.9 C212.7,93.1 206.9,96.0 205.4,96.6 C205.1,102.4 203.0,107.8 198.3,112.5 C181.9,128.9 168.3,122.5 157.7,114.1 C157.9,116.9 156.7,120.9 152.7,124.9 L141.0,136.5 C139.8,137.7 141.6,141.9 141.8,141.8 Z" fill="currentColor" class="octo-body"></path></svg></a>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://oneyoung.top/Java%E5%8A%A8%E6%80%81%E7%BC%96%E8%AF%91/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="oneyoung">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="无涯">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Java动态编译
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-04-08 11:35:50" itemprop="dateCreated datePublished" datetime="2022-04-08T11:35:50+08:00">2022-04-08</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-04-12 16:24:41" itemprop="dateModified" datetime="2022-04-12T16:24:41+08:00">2022-04-12</time>
+              </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>我们都知道<code>Java</code>属于<code>编译型语言</code>,即源码需要经过编译成字节码然后运行于<code>JVM</code></p>
+<p>我们也知道，代码一旦编写完成，编译出的<code>.class</code>文件是一定的。这里也就是<code>静态编译</code>。</p>
+<p>那我们需要在运行时编译并加载应该怎么办呢，存在如下场景</p>
+<ul>
+<li>我们熟知的类似<code>LeetCode</code>这种测评平台，需要执行用户输入的代码。</li>
+<li>服务器需要动态加载某些类文件进行编译。</li>
+</ul>
+<p>那么我们就要使用<code>Java</code>的<code>动态编译</code>能力，在运行时编译代码并加载进<code>jvm</code>。</p>
+<h2 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h2><p>从<code>Java 6</code>开始，引入了<code>Java</code>代码重写过的编译器接口，使得我们可以在运行时编译<code>Java</code>源代码，然后再通过类加载器将编译好的类加载进<code>JVM</code>，这种在运行时编译代码的操作就叫做<code>动态编译</code>。</p>
+<h3 id="主要类库"><a href="#主要类库" class="headerlink" title="主要类库"></a>主要类库</h3><ul>
+<li><p><code>JavaCompiler</code>  - 表示<code>java</code>编译器, <code>run</code>方法执行编译操作. 还有一种编译方式是先生成编译任务(<code>CompilationTask</code>), 让后调用<code>CompilationTask</code>的<code>call</code>方法执行编译任务</p>
+</li>
+<li><p><code>JavaFileObject</code>  - 表示一个<code>java</code>源文件对象</p>
+</li>
+<li><p><code>JavaFileManager</code> - <code>Java</code>源文件管理类, 管理一系列<code>JavaFileObject</code></p>
+</li>
+<li><p><code>Diagnostic</code>  - 表示一个诊断信息</p>
+</li>
+<li><p><code>DiagnosticListener</code> - 诊断信息监听器, 编译过程触发. 生成编译<code>task(JavaCompiler#getTask())</code>或获取<code>FileManager(JavaCompiler#getStandardFileManager())</code>时需要传递<code>DiagnosticListener</code>以便收集诊断信息</p>
+</li>
+</ul>
+<h3 id="流程图"><a href="#流程图" class="headerlink" title="流程图"></a>流程图</h3><p><img src="/Java%E5%8A%A8%E6%80%81%E7%BC%96%E8%AF%91/%E6%9C%AA%E5%91%BD%E5%90%8D2.001-9747789-9747793.jpeg" alt="未命名2.001"></p>
+<h2 id="源码文件-gt-字节码文件"><a href="#源码文件-gt-字节码文件" class="headerlink" title="源码文件 -&gt; 字节码文件"></a>源码文件 -&gt; 字节码文件</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">fromJavaFile</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 获取Javac编译器对象</span></span><br><span class="line">    JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();</span><br><span class="line">    <span class="comment">// 获取文件管理器：负责管理类文件的输入输出</span></span><br><span class="line">    StandardJavaFileManager fileManager = compiler.getStandardFileManager(<span class="keyword">null</span>, <span class="keyword">null</span>, <span class="keyword">null</span>);</span><br><span class="line">    <span class="comment">// 获取要被编译的Java源文件</span></span><br><span class="line">    File file = <span class="keyword">new</span> File(<span class="string">&quot;/Users/oneyoung/oneyoung/project/my/code/src/main/java/top/oneyoung/dynamic/TestHello.java&quot;</span>);</span><br><span class="line">    <span class="comment">// 通过源文件获取到要编译的Java类源码迭代器，包括所有内部类，其中每个类都是一个JavaFileObject</span></span><br><span class="line">    Iterable&lt;? extends JavaFileObject&gt; compilationUnits = fileManager.getJavaFileObjects(file);</span><br><span class="line">    <span class="comment">// 生成编译任务</span></span><br><span class="line">    JavaCompiler.CompilationTask task = compiler.getTask(<span class="keyword">null</span>, fileManager, <span class="keyword">null</span>, <span class="keyword">null</span>, <span class="keyword">null</span>, compilationUnits);</span><br><span class="line">    <span class="comment">// 执行编译任务</span></span><br><span class="line">    task.call();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>我们这里准备了<code>TestHello.java</code></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TestHello</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;this is a test&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>执行后在源文件同目录下生成了编译的class文件<code>HelloTest.class</code></p>
+<p><img src="/Java%E5%8A%A8%E6%80%81%E7%BC%96%E8%AF%91/image-20220412152021665-9748023.png" alt="image-20220412152021665"></p>
+<p>我们试着手动加载该<code>class</code>文件，使用类加载器的<code>defineClass</code>方法，可以直接加载字节码文件。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> Class&lt;?&gt; loadClassFromDisk(String path) <span class="keyword">throws</span> NoSuchMethodException, InvocationTargetException, IllegalAccessException &#123;</span><br><span class="line">    <span class="comment">// defineClass 为 ClassLoader 类的一个方法，用于加载类</span></span><br><span class="line">    <span class="comment">// 但是这个方法是 protected 的，所以需要通过反射的方式获取这个方法的权限</span></span><br><span class="line">    Class&lt;ClassLoader&gt; classLoaderClass = ClassLoader.class;</span><br><span class="line">    Method defineClass = classLoaderClass.getDeclaredMethod(<span class="string">&quot;defineClass&quot;</span>, <span class="keyword">byte</span>[].class, <span class="keyword">int</span>.class, <span class="keyword">int</span>.class);</span><br><span class="line">    defineClass.setAccessible(<span class="keyword">true</span>);</span><br><span class="line">    <span class="comment">// 读取文件系统的 file 为 byte 数组</span></span><br><span class="line">    File file = <span class="keyword">new</span> File(path);</span><br><span class="line">    <span class="keyword">byte</span>[] bytes = <span class="keyword">new</span> <span class="keyword">byte</span>[(<span class="keyword">int</span>) file.length()];</span><br><span class="line">    <span class="keyword">try</span> (FileInputStream fileInputStream = <span class="keyword">new</span> FileInputStream(file)) &#123;</span><br><span class="line">        fileInputStream.read(bytes);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">        e.printStackTrace();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 执行 defineClass 方法 返回 Class 对象</span></span><br><span class="line">    <span class="keyword">return</span> (Class&lt;?&gt;) defineClass.invoke(Thread.currentThread().getContextClassLoader(), bytes, <span class="number">0</span>, bytes.length);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>由于<code>TestHello</code>中的方法为静态方法，使用class反射机制执行方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 执行编译任务</span></span><br><span class="line">Boolean call = task.call();</span><br><span class="line"><span class="keyword">if</span> (call) &#123;</span><br><span class="line">    Class&lt;?&gt; o = loadClassFromDisk(<span class="string">&quot;/Users/oneyoung/oneyoung/project/my/code/src/main/java/top/oneyoung/dynamic/TestHello.class&quot;</span>);</span><br><span class="line">    Method main = o.getMethod(<span class="string">&quot;main&quot;</span>, String[].class);</span><br><span class="line">    main.invoke(<span class="keyword">null</span>, <span class="keyword">new</span> Object[]&#123;<span class="keyword">new</span> String[]&#123;&#125;&#125;);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">this is a test</span><br></pre></td></tr></table></figure>
+<h2 id="源码字符串-gt-字节码文件"><a href="#源码字符串-gt-字节码文件" class="headerlink" title="源码字符串 -&gt; 字节码文件"></a>源码字符串 -&gt; 字节码文件</h2><p>在流程图中，<code>getTask().call()</code>会通过调用作为参数传入的<code>JavaFileObject</code>对象的<code>getCharContent()</code>方法获得字符串序列，即源码的读取是通过 <code>JavaFileObject</code>的 <code>getCharContent()</code>方法，那我们只需要重写<code>getCharContent()</code>方法，即可将我们的字符串源码装进<code>JavaFileObject</code>了。</p>
+<p>构造<code>SourceJavaFileObject</code>实现定制的<code>JavaFileObject</code>对象，用于存储字符串源码</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">SourceJavaFileObject</span> <span class="keyword">extends</span> <span class="title">SimpleJavaFileObject</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * The source code of this &quot;file&quot;.</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> String code;</span><br><span class="line"></span><br><span class="line">    SourceJavaFileObject(String name, String code) &#123;</span><br><span class="line">        <span class="keyword">super</span>(URI.create(<span class="string">&quot;string:///&quot;</span> + name.replace(<span class="string">&#x27;.&#x27;</span>, <span class="string">&#x27;/&#x27;</span>) + Kind.SOURCE.extension), Kind.SOURCE);</span><br><span class="line">        <span class="keyword">this</span>.code = code;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> CharSequence <span class="title">getCharContent</span><span class="params">(<span class="keyword">boolean</span> ignoreEncodingErrors)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> code;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>则创建<code>JavaFileObject</code>对象时，变为了：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 通过源代码字符串获取到要编译的Java类源码迭代器，包括所有内部类，其中每个类都是一个JavaFileObject</span></span><br><span class="line">SourceJavaFileObject javaFileObject = <span class="keyword">new</span> SourceJavaFileObject(<span class="string">&quot;TestHello&quot;</span>, <span class="string">&quot;public class TestHello &#123; public static void main(String[] args) &#123; System.out.println(\&quot;Hello World\&quot;); &#125; &#125;&quot;</span>);</span><br><span class="line"><span class="comment">// 生成编译任务</span></span><br><span class="line">JavaCompiler.CompilationTask task = compiler.getTask(<span class="keyword">null</span>, fileManager, <span class="keyword">null</span>, <span class="keyword">null</span>, <span class="keyword">null</span>, Collections.singleton(javaFileObject));</span><br></pre></td></tr></table></figure>
+<p>执行后，同样编译出了<code>class</code>文件，不过由于没有指定编译的<code>class</code>输出路径，他会默认放在源文件的根目录下</p>
+<p><img src="/Java%E5%8A%A8%E6%80%81%E7%BC%96%E8%AF%91/image-20220412160252209.png" alt="image-20220412160252209"></p>
+<p>后面同样可以通过<code>defindClass</code>加载字节码完成加载。</p>
+<h2 id="源码字符串-gt-字节码数组"><a href="#源码字符串-gt-字节码数组" class="headerlink" title="源码字符串 -&gt; 字节码数组"></a>源码字符串 -&gt; 字节码数组</h2><p>如果我们进行动态编译时，想要直接输入源码字符串并且输出的是字节码数组，而不是输出字节码文件，又该如何实现？实际上，这是从内存中得到源码，再输出到内存的方式。</p>
+<p>在<code>getTask().call()</code>源代码执行流程图中，我们可以发现<code>JavaFileObject</code> 的 <code>openOutputStream()</code>方法控制了编译后字节码的输出行为,编译完成后会调用<code>openOutputStream</code>获取输出流,并写数据（字节码）。所以我们需要重写<code>JavaFileObject</code> 的 <code>openOutputStream()</code>方法。</p>
+<p>同时在执行流程图中，我们还发现用于输出的<code>JavaFileObject</code> 对象是<code>JavaFileManager</code>的<code>getJavaFileForOutput()</code>方法提供的，所以为了让编译器编译完成后，将编译得到的字节码输出到我们自己构造的<code>JavaFileObject</code> 对象，我们还需要自定义JavaFileManager`。</p>
+<p>这里我使用类委托的方式，把大部分功能委托给了传入的<code>StandardJavaFileManager</code>,主要是重写了<code>getJavaFileForOutput</code>,使输出编译完成的字节码文件为字节数组。</p>
+<p>然后增加了方法<code>getBytesByClassName</code>获取编译完成的字节码字节数组</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ByteArrayJavaFileManager</span> <span class="keyword">implements</span> <span class="title">JavaFileManager</span> </span>&#123;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">static</span> <span class="keyword">final</span> Logger LOG = LoggerFactory.getLogger(ByteArrayJavaFileManager.class);</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> StandardJavaFileManager fileManager;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * synchronizing due to ConcurrentModificationException</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> Map&lt;String, ByteArrayOutputStream&gt; buffers = Collections.synchronizedMap(<span class="keyword">new</span> LinkedHashMap&lt;&gt;());</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">ByteArrayJavaFileManager</span><span class="params">(StandardJavaFileManager fileManager)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">this</span>.fileManager = fileManager;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> ClassLoader <span class="title">getClassLoader</span><span class="params">(Location location)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> fileManager.getClassLoader(location);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">synchronized</span> Iterable&lt;JavaFileObject&gt; <span class="title">list</span><span class="params">(Location location, String packageName, Set&lt;Kind&gt; kinds, <span class="keyword">boolean</span> recurse)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> fileManager.list(location, packageName, kinds, recurse);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> String <span class="title">inferBinaryName</span><span class="params">(Location location, JavaFileObject file)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> fileManager.inferBinaryName(location, file);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">isSameFile</span><span class="params">(FileObject a, FileObject b)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> fileManager.isSameFile(a, b);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">synchronized</span> <span class="keyword">boolean</span> <span class="title">handleOption</span><span class="params">(String current, Iterator&lt;String&gt; remaining)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> fileManager.handleOption(current, remaining);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">hasLocation</span><span class="params">(Location location)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> fileManager.hasLocation(location);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> JavaFileObject <span class="title">getJavaFileForInput</span><span class="params">(Location location, String className, Kind kind)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> (location == StandardLocation.CLASS_OUTPUT) &#123;</span><br><span class="line">            <span class="keyword">boolean</span> success;</span><br><span class="line">            <span class="keyword">final</span> <span class="keyword">byte</span>[] bytes;</span><br><span class="line">            <span class="keyword">synchronized</span> (buffers) &#123;</span><br><span class="line">                success = buffers.containsKey(className) &amp;&amp; kind == Kind.CLASS;</span><br><span class="line">                bytes = buffers.get(className).toByteArray();</span><br><span class="line">            &#125;</span><br><span class="line">            <span class="keyword">if</span> (success) &#123;</span><br><span class="line"></span><br><span class="line">                <span class="keyword">return</span> <span class="keyword">new</span> SimpleJavaFileObject(URI.create(className), kind) &#123;</span><br><span class="line">                    <span class="meta">@Override</span></span><br><span class="line">                    <span class="function"><span class="keyword">public</span> InputStream <span class="title">openInputStream</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                        <span class="keyword">return</span> <span class="keyword">new</span> ByteArrayInputStream(bytes);</span><br><span class="line">                    &#125;</span><br><span class="line">                &#125;;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> fileManager.getJavaFileForInput(location, className, kind);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> JavaFileObject <span class="title">getJavaFileForOutput</span><span class="params">(Location location, <span class="keyword">final</span> String className, Kind kind, FileObject sibling)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">new</span> SimpleJavaFileObject(URI.create(className), kind) &#123;</span><br><span class="line">            <span class="meta">@Override</span></span><br><span class="line">            <span class="function"><span class="keyword">public</span> OutputStream <span class="title">openOutputStream</span><span class="params">()</span> </span>&#123;</span><br><span class="line">                <span class="comment">// 字节输出流用与FileManager输出编译完成的字节码文件为字节数组</span></span><br><span class="line">                ByteArrayOutputStream bos = <span class="keyword">new</span> ByteArrayOutputStream();</span><br><span class="line">                <span class="comment">// 将每个需要加载的类的输出流进行缓存</span></span><br><span class="line">                buffers.putIfAbsent(className, bos);</span><br><span class="line">                <span class="keyword">return</span> bos;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> FileObject <span class="title">getFileForInput</span><span class="params">(Location location, String packageName, String relativeName)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> fileManager.getFileForInput(location, packageName, relativeName);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> FileObject <span class="title">getFileForOutput</span><span class="params">(Location location, String packageName, String relativeName, FileObject sibling)</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> fileManager.getFileForOutput(location, packageName, relativeName, sibling);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">flush</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        <span class="comment">// Do nothing</span></span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">close</span><span class="params">()</span> <span class="keyword">throws</span> IOException </span>&#123;</span><br><span class="line">        fileManager.close();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">isSupportedOption</span><span class="params">(String option)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">return</span> fileManager.isSupportedOption(option);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">clearBuffers</span><span class="params">()</span> </span>&#123;</span><br><span class="line">        buffers.clear();</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> Map&lt;String, <span class="keyword">byte</span>[]&gt; getAllBuffers() &#123;</span><br><span class="line">        Map&lt;String, <span class="keyword">byte</span>[]&gt; ret = <span class="keyword">new</span> LinkedHashMap&lt;&gt;(buffers.size() * <span class="number">2</span>);</span><br><span class="line">        Map&lt;String, ByteArrayOutputStream&gt; compiledClasses = <span class="keyword">new</span> LinkedHashMap&lt;&gt;(ret.size());</span><br><span class="line">        <span class="keyword">synchronized</span> (buffers) &#123;</span><br><span class="line">            compiledClasses.putAll(buffers);</span><br><span class="line">        &#125;</span><br><span class="line">        compiledClasses.forEach((k, v) -&gt; ret.put(k, v.toByteArray()));</span><br><span class="line">        <span class="keyword">return</span> ret;</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="keyword">public</span> <span class="keyword">byte</span>[] getBytesByClassName(String className) &#123;</span><br><span class="line">        <span class="keyword">return</span> buffers.get(className).toByteArray();</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>然后我们修改下之前的执行流程</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">fromJavaSourceToByteArray1</span><span class="params">()</span> <span class="keyword">throws</span> Exception </span>&#123;</span><br><span class="line">    <span class="comment">// 获取Javac编译器对象</span></span><br><span class="line">    JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();</span><br><span class="line">    <span class="comment">// 获取文件管理器：负责管理类文件的输入输出</span></span><br><span class="line">    StandardJavaFileManager fileManager = compiler.getStandardFileManager(<span class="keyword">null</span>, <span class="keyword">null</span>, <span class="keyword">null</span>);</span><br><span class="line">    <span class="comment">// 创建自定义的FileManager</span></span><br><span class="line">    ByteArrayJavaFileManager byteArrayJavaFileManager = <span class="keyword">new</span> ByteArrayJavaFileManager(fileManager);</span><br><span class="line">    <span class="comment">// 通过源代码字符串获取到要编译的Java类源码迭代器，包括所有内部类，其中每个类都是一个JavaFileObject</span></span><br><span class="line">    JavaFileObject javaFileObject = <span class="keyword">new</span> SourceJavaFileObject(<span class="string">&quot;TestHello&quot;</span>, <span class="string">&quot;public class TestHello &#123; public static void say(String args) &#123; System.out.println(args); &#125; &#125;&quot;</span>);</span><br><span class="line"></span><br><span class="line">    JavaCompiler.CompilationTask task = compiler.getTask(<span class="keyword">null</span>, byteArrayJavaFileManager, <span class="keyword">null</span>, <span class="keyword">null</span>, <span class="keyword">null</span>, Collections.singletonList(javaFileObject));</span><br><span class="line">    <span class="comment">// 执行编译任务</span></span><br><span class="line">    Boolean call = task.call();</span><br><span class="line">    <span class="keyword">if</span> (Boolean.TRUE.equals(call)) &#123;</span><br><span class="line">        <span class="keyword">byte</span>[] testHellos = byteArrayJavaFileManager.getBytesByClassName(<span class="string">&quot;TestHello&quot;</span>);</span><br><span class="line">        Class&lt;ClassLoader&gt; classLoaderClass = ClassLoader.class;</span><br><span class="line">        Method defineClass = classLoaderClass.getDeclaredMethod(<span class="string">&quot;defineClass&quot;</span>, <span class="keyword">byte</span>[].class, <span class="keyword">int</span>.class, <span class="keyword">int</span>.class);</span><br><span class="line">        defineClass.setAccessible(<span class="keyword">true</span>);</span><br><span class="line">        Object invoke = defineClass.invoke(TestHello.class.getClassLoader(), testHellos, <span class="number">0</span>, testHellos.length);</span><br><span class="line">        Class clazz = (Class) invoke;</span><br><span class="line">        clazz.getMethod(<span class="string">&quot;say&quot;</span>, String.class).invoke(<span class="keyword">null</span>, <span class="string">&quot;你好&quot;</span>);</span><br><span class="line"></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>成功输出</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">你好</span><br></pre></td></tr></table></figure>
+
+    </div>
+
+    
+    
+    
+        
+
+<div>
+<ul class="post-copyright">
+  <li class="post-copyright-author">
+    <strong>本文作者： </strong>oneyoung
+  </li>
+  <li class="post-copyright-link">
+    <strong>本文链接：</strong>
+    <a href="https://oneyoung.top/Java%E5%8A%A8%E6%80%81%E7%BC%96%E8%AF%91/" title="Java动态编译">https://oneyoung.top/Java动态编译/</a>
+  </li>
+  <li class="post-copyright-license">
+    <strong>版权声明： </strong>本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-CN" rel="noopener" target="_blank"><i class="fab fa-fw fa-creative-commons"></i>BY-NC-SA</a> 许可协议。转载请注明出处！
+  </li>
+</ul>
+</div>
+
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F-%E8%A3%85%E9%A5%B0%E6%A8%A1%E5%BC%8F/" rel="prev" title="设计模式-装饰模式">
+      <i class="fa fa-chevron-left"></i> 设计模式-装饰模式
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%89%8D%E8%A8%80"><span class="nav-number">1.</span> <span class="nav-text">前言</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8E%9F%E7%90%86"><span class="nav-number">2.</span> <span class="nav-text">原理</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%BB%E8%A6%81%E7%B1%BB%E5%BA%93"><span class="nav-number">2.1.</span> <span class="nav-text">主要类库</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%B5%81%E7%A8%8B%E5%9B%BE"><span class="nav-number">2.2.</span> <span class="nav-text">流程图</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%BA%90%E7%A0%81%E6%96%87%E4%BB%B6-gt-%E5%AD%97%E8%8A%82%E7%A0%81%E6%96%87%E4%BB%B6"><span class="nav-number">3.</span> <span class="nav-text">源码文件 -&gt; 字节码文件</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%BA%90%E7%A0%81%E5%AD%97%E7%AC%A6%E4%B8%B2-gt-%E5%AD%97%E8%8A%82%E7%A0%81%E6%96%87%E4%BB%B6"><span class="nav-number">4.</span> <span class="nav-text">源码字符串 -&gt; 字节码文件</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%BA%90%E7%A0%81%E5%AD%97%E7%AC%A6%E4%B8%B2-gt-%E5%AD%97%E8%8A%82%E7%A0%81%E6%95%B0%E7%BB%84"><span class="nav-number">5.</span> <span class="nav-text">源码字符串 -&gt; 字节码数组</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">oneyoung</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">25</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-tags">
+            <a href="/tags/">
+          
+        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-name">标签</span></a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/oneyoungg" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;oneyoungg" rel="noopener" target="_blank"><i class="fab fa-github fa-fw"></i>GitHub</a>
+      </span>
+  </div>
+  <div class="cc-license motion-element" itemprop="license">
+    <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/zh-CN" class="cc-opacity" rel="noopener" target="_blank"><img src="/images/cc-by-nc-sa.svg" alt="Creative Commons"></a>
+  </div>
+
+
+
+      </div>
+        <div class="back-to-top motion-element">
+          <i class="fa fa-arrow-up"></i>
+          <span>0%</span>
+        </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">oneyoung</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://muse.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
