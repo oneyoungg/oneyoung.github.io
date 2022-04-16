@@ -156,6 +156,131 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://oneyoung.top/%E8%BD%BB%E9%87%8F%E9%AB%98%E6%95%88%E7%9A%84Java%E5%B1%9E%E6%80%A7%E6%98%A0%E5%B0%84%E5%B7%A5%E5%85%B7oneyoung-converter/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="oneyoung">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="无涯">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/%E8%BD%BB%E9%87%8F%E9%AB%98%E6%95%88%E7%9A%84Java%E5%B1%9E%E6%80%A7%E6%98%A0%E5%B0%84%E5%B7%A5%E5%85%B7oneyoung-converter/" class="post-title-link" itemprop="url">轻量高效的Java属性映射工具oneyoung-converter</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2022-04-15 23:10:06" itemprop="dateCreated datePublished" datetime="2022-04-15T23:10:06+08:00">2022-04-15</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-04-16 12:31:19" itemprop="dateModified" datetime="2022-04-16T12:31:19+08:00">2022-04-16</time>
+              </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>在多层应用中，不管是之前的经典三层模型、还是现在非常流行的<code>DDD</code>模型，都需要对各种不同的分层对象(<code>JavaBean</code>)进行转换，也就是<code>JavaBean</code>的属性映射问题。最常见和最简单的方式是编写对象属性转换函数，即普通的 <code>Getter</code>/<code>Setter</code> 方法。除此之外各种各种属性映射工具。</p>
+<h2 id="几种常见的-Java-属性映射工具及原理"><a href="#几种常见的-Java-属性映射工具及原理" class="headerlink" title="几种常见的 Java 属性映射工具及原理"></a>几种常见的 Java 属性映射工具及原理</h2><h3 id="工具"><a href="#工具" class="headerlink" title="工具"></a>工具</h3><ol>
+<li><code>org.springframework.beans.BeanUtils#copyProperties</code></li>
+<li><code>org.apache.commons.beanutils.BeanUtils#copyProperties</code></li>
+<li><code>net.sf.cglib.beans.BeanCopier#copy</code></li>
+<li><code>mapstruct</code></li>
+</ol>
+<h3 id="原理"><a href="#原理" class="headerlink" title="原理"></a>原理</h3><h4 id="反射技术"><a href="#反射技术" class="headerlink" title="反射技术"></a>反射技术</h4><p><code>Spring</code>框架的<code>BeanUtils</code>与<code>Appach</code>的<code>BeanUtils</code>都是使用的<code>Java</code>反射技术实现映射。效率相对较差。</p>
+<h4 id="字节码生成技术"><a href="#字节码生成技术" class="headerlink" title="字节码生成技术"></a>字节码生成技术</h4><p><code>cglib</code>的<code>BeanCopier</code>使用的是动态生成字节码的技术，动态生成对象间的转换器，与手动写<code>getter</code>、<code>setter</code>性能相当。</p>
+<h4 id="编译期技术"><a href="#编译期技术" class="headerlink" title="编译期技术"></a>编译期技术</h4><p>类似<code>Lombok</code>，<code>mapstruct</code>其实也是一种代码生成技术，在编译期生成真实的转换代码，所以性能也与手动写<code>getter</code>、<code>setter</code>性能相当。</p>
+<p>因此从性能来讲首推 <code>Getter/Setter</code> 方式（含 <code>MapStruct</code>），其次是 <code>cglib</code>。</p>
+<h2 id="选用哪种技术？"><a href="#选用哪种技术？" class="headerlink" title="选用哪种技术？"></a>选用哪种技术？</h2><p><strong>属性转换工具的优势</strong>：用起来方便，往往一行行代码就实现多属性的转换。</p>
+<p>像<code>mapstruct</code>在属性不对应的情况下，还可以通过注解或者修改配置方式自动适配，功能非常强大。</p>
+<p><strong>属性转换工具的缺点</strong>：</p>
+<ol>
+<li>多次对象映射（从 A 映射到 B，再从 B 映射到 C）如果属性不完全一致容易出错；</li>
+<li>有些转换工具，属性类型不一致自动转换容易出现意想不到的 BUG；</li>
+<li>基于反射和字节码增强技术的映射工具实现的映射，对一个类属性的修改不容易感知到对其它转换类的影响。</li>
+</ol>
+<p><strong>我们可以想想这样一个场景</strong>：</p>
+<blockquote>
+<p>一个<code>UserDO</code>如果属性超多，转换到<code>UserDTO</code>再被转换成<code>UserVO</code>。如果你修改<code>UserDTO</code>的一个属性命名，其它类待映射的类新增的对应属性有一个字母写错了，编译期间不容易发现问题，造成 BUG。</p>
+<p>如果使用原始的 <code>Getter/Setter</code> 方式转换，修改了<code>UserDO</code>的属性，那么转换代码就会报错，编译都不通过，这样就可以逆向提醒我们注意到属性的变动的影响。</p>
+</blockquote>
+<p><strong>因此强烈建议使用定义转换类和转换函数，使用插件实现转换，不需要引入其它库，降低了复杂性，可以支持更灵活的映射。</strong></p>
+<p>大家可以想想这种场景：</p>
+<blockquote>
+<p>如果一个 A 映射到 B，B 有两个属性来自 C，一个属性来自于传参或者计算等。</p>
+</blockquote>
+<p>此时自定义转换函数就更方便。</p>
+<p><strong>如果使用属性映射工具推荐使用 MapStruct，更安全一些，转换效率也很高。</strong></p>
+<p>但是<code>MapStruct</code>也有他的缺点，对代码有一定的侵入性。及时两个对象拥有类型、名称相同属性，每两个转换对象需要定义<code>Mapper</code>。</p>
+<h2 id="oneyoung-converter"><a href="#oneyoung-converter" class="headerlink" title="oneyoung-converter"></a>oneyoung-converter</h2><p><code>oneyoung-converter</code>结合了两种主流的映射方案。使用方式简单方便，开箱即用。</p>
+<ul>
+<li>支持自动映射，像<code>BeanUtils</code>一样，只需要传入源对象(<code>Object</code>)和目标对象(<code>Class</code>)，即可完成转换。<ul>
+<li>底层使用了Java动态编译技术，自动生成转换器代码，编译并载入<code>JVM</code></li>
+<li>两个对象间，自动转换器只会生成一次，然后就会装入<code>Cache</code>复用</li>
+<li>性能与自定义<code>Getter/Setter</code>一致。</li>
+</ul>
+</li>
+<li>支持自定义映射，你可以自定义转换器，只需要实现它提供的接口<code>top.oneyoung.converter.Converter</code>，并注册到转换器工厂。<code>ConverterFactory.register(new CreateSchoolRequestToCreateSchoolServiceRequestConverter());</code></li>
+<li>提供自动映射启停开关，若开启自动映射且添加了自定义映射，将优先使用自定义的转换器完成映射。若关闭了自动映射且没有自定义转换器，则会抛出找不到转换器的异常<code>ConvertException</code>.</li>
+</ul>
+<p>不管你是自动映射还是自定义映射，<code>oneyoung-converter</code>的使用方式只有下面这几种。</p>
+<ol>
+<li>直接转换两个对象</li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">CreateSchoolRequest request = CreateSchoolRequest.builder().name(<span class="string">&quot;test&quot;</span>).build();</span><br><span class="line">CreateSchoolServiceRequest createSchoolServiceRequest = Converter.directConvert(request, CreateSchoolServiceRequest.class);</span><br></pre></td></tr></table></figure>
+<ol start="2">
+<li>转换集合对象</li>
+</ol>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line">CreateSchoolRequest input = CreateSchoolRequest.builder()</span><br><span class="line">        .name(<span class="string">&quot;test1&quot;</span>)</span><br><span class="line">        .address(<span class="string">&quot;test address1&quot;</span>)</span><br><span class="line">        .build();</span><br><span class="line">CreateSchoolRequest input1 = CreateSchoolRequest.builder()</span><br><span class="line">        .name(<span class="string">&quot;test2&quot;</span>)</span><br><span class="line">        .address(<span class="string">&quot;test address2&quot;</span>)</span><br><span class="line">        .build();</span><br><span class="line">List&lt;CreateSchoolRequest&gt; createSchoolRequests = Arrays.asList(input, input1);</span><br><span class="line">List&lt;CreateSchoolServiceRequest&gt; createSchoolServiceRequests = Converter.directConvertCollectionSingle(createSchoolRequests, CreateSchoolServiceRequest.class);</span><br></pre></td></tr></table></figure>
+<h2 id="oneyoung-converter集成spring-boot"><a href="#oneyoung-converter集成spring-boot" class="headerlink" title="oneyoung-converter集成spring-boot"></a>oneyoung-converter集成spring-boot</h2><h3 id="引入依赖"><a href="#引入依赖" class="headerlink" title="引入依赖"></a>引入依赖</h3><figure class="highlight xml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="tag">&lt;<span class="name">dependency</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">groupId</span>&gt;</span>top.oneyoung<span class="tag">&lt;/<span class="name">groupId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">artifactId</span>&gt;</span>oneyoung-converter-starter<span class="tag">&lt;/<span class="name">artifactId</span>&gt;</span></span><br><span class="line">    <span class="tag">&lt;<span class="name">version</span>&gt;</span>1.0.0<span class="tag">&lt;/<span class="name">version</span>&gt;</span></span><br><span class="line"><span class="tag">&lt;/<span class="name">dependency</span>&gt;</span></span><br></pre></td></tr></table></figure>
+<h3 id="配置"><a href="#配置" class="headerlink" title="配置"></a>配置</h3><figure class="highlight properties"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 控制自动映射开闭</span></span><br><span class="line"><span class="meta">oneyoung.converter.auto-convert</span>=<span class="string">true</span></span><br></pre></td></tr></table></figure>
+<h3 id="添加自定义映射"><a href="#添加自定义映射" class="headerlink" title="添加自定义映射"></a>添加自定义映射</h3><p>创建一个自定义转换器，只需要实现接口<code>top.oneyoung.converter.Converter</code>，并注册为<code>spring bean</code>，即会载入转换器。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Slf4j</span></span><br><span class="line"><span class="meta">@Component</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">RequestToResponseConverter</span> <span class="keyword">implements</span> <span class="title">Converter</span>&lt;<span class="title">Request</span>, <span class="title">Response</span>&gt; </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="meta">@Override</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> Response <span class="title">convert</span><span class="params">(Request source)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (source == <span class="keyword">null</span>) &#123;</span><br><span class="line">            <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">        &#125;</span><br><span class="line">        log.info(<span class="string">&quot;RequestToResponseConverter.convert: &#123;&#125;&quot;</span>, source);</span><br><span class="line">        Response target = <span class="keyword">new</span> Response();</span><br><span class="line">        target.setName(source.getName());</span><br><span class="line">        <span class="keyword">return</span> target;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p><code>spring</code>在加载初期就会自动扫描需要加载的<code>bean</code>，通过实现<code>BeanPostProcessor</code>我们做了拦截，将<code>Converter</code>载入<code>ConverterFactory</code></p>
+<p>看到日志下面这种日志，说明我们成功注册了自定义转换器。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">2022-04-16 12:26:56.584  INFO 75693 --- [           main] t.o.c.starter.SpringFactoryRegister      : ConverterFactory Register: class top.oneyoung.portal.entity.Request--&gt;class top.oneyoung.portal.entity.Response By class top.oneyoung.portal.converter.RequestToResponseConverter</span><br></pre></td></tr></table></figure>
+<h3 id="使用"><a href="#使用" class="headerlink" title="使用"></a>使用</h3><p>与上面列举的使用方式一致。</p>
+<h2 id="开源"><a href="#开源" class="headerlink" title="开源"></a>开源</h2><p>这个转换器已经被我开源。欢迎<code>Star</code> <a target="_blank" rel="noopener" href="https://github.com/oneyoungg/oneyoung">https://github.com/oneyoungg/oneyoung</a></p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://oneyoung.top/Java%E5%8A%A8%E6%80%81%E7%BC%96%E8%AF%91/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1106,92 +1231,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://oneyoung.top/%E7%AE%97%E6%B3%95-%E4%BA%8C%E5%88%86%E6%9F%A5%E6%89%BE/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="oneyoung">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="无涯">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/%E7%AE%97%E6%B3%95-%E4%BA%8C%E5%88%86%E6%9F%A5%E6%89%BE/" class="post-title-link" itemprop="url">算法-二分查找</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2021-09-05 09:49:51" itemprop="dateCreated datePublished" datetime="2021-09-05T09:49:51+08:00">2021-09-05</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2021-09-07 00:42:35" itemprop="dateModified" datetime="2021-09-07T00:42:35+08:00">2021-09-07</time>
-              </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="什么是二分查找"><a href="#什么是二分查找" class="headerlink" title="什么是二分查找"></a>什么是二分查找</h2><p>二分查找也称折半查找（Binary Search），它是一种效率较高的查找方法，可以在数据规模的对数时间复杂度内完成查找。算法。</p>
-<p>二分查找可以应用于数组，是因为数组具有有随机访问的特点，并且数组是<strong>有序</strong>的。</p>
-<p>二分查找体现的数学思想是「减而治之」，可以通过当前看到的中间元素的特点推测它两侧元素的性质，以达到缩减问题规模的效果。</p>
-<h2 id="算法实现"><a href="#算法实现" class="headerlink" title="算法实现"></a>算法实现</h2><p>首先，假设数组中元素是按升序排列，将数组中间位置记录的值与查找目标值比较，如果两者相等，则查找成功；否则利用中间位置值将数组分成前、后两个子数组，如果中间位置记录的值大于查找目标值，则进一步查找前一子数组，否则进一步查找后一子数组。重复以上过程，直到找到满足条件的记录，使查找成功，或直到子数组不存在为止，此时查找不成功。</p>
-<h2 id="时间复杂度"><a href="#时间复杂度" class="headerlink" title="时间复杂度"></a>时间复杂度</h2><p>时间复杂度即是while循环的次数。</p>
-<p>总共有n个元素，</p>
-<p>渐渐跟下去就是n,n/2,n/4,….n/2^k（接下来操作元素的剩余个数），其中k就是循环的次数</p>
-<p>由于你n/2^k取整后&gt;=1</p>
-<p>即令n/2^k=1</p>
-<p>可得k=log2n,（是以2为底，n的对数）</p>
-<p>所以时间复杂度可以表示<code>O(h)=O(log2n)</code></p>
-<h2 id="题目"><a href="#题目" class="headerlink" title="题目"></a>题目</h2><p>编写一个高效的算法来判断 m x n 矩阵中，是否存在一个目标值。该矩阵具有如下特性：</p>
-<p>每行中的整数从左到右按升序排列。<br>每行的第一个整数大于前一行的最后一个整数。</p>
-<p><strong>示例 ：</strong></p>
-<p><img src="/%E7%AE%97%E6%B3%95-%E4%BA%8C%E5%88%86%E6%9F%A5%E6%89%BE/mat.jpg" alt="img"></p>
-<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">输入：matrix &#x3D; [[1,3,5,7],[10,11,16,20],[23,30,34,60]], target &#x3D; 3</span><br><span class="line">输出：true</span><br></pre></td></tr></table></figure>
-<h2 id="题解"><a href="#题解" class="headerlink" title="题解"></a>题解</h2><blockquote>
-<p>这里提供一个自认为的最优解</p>
-</blockquote>
-<p>若将矩阵每一行拼接在上一行的末尾，则会得到一个升序数组，我们可以在该数组上二分找到目标元素。</p>
-<p>代码实现时，可以二分升序数组的下标，将其映射到原矩阵的行和列上。</p>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line"><span class="class"><span class="keyword">class</span> <span class="title">Solution</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">searchMatrix</span><span class="params">(<span class="keyword">int</span>[][] matrix, <span class="keyword">int</span> target)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">int</span> m = matrix.length;</span><br><span class="line">        <span class="keyword">int</span> n = matrix[<span class="number">0</span>].length;</span><br><span class="line">        <span class="keyword">int</span> low = <span class="number">0</span>;</span><br><span class="line">        <span class="keyword">int</span> high = m * n - <span class="number">1</span>;</span><br><span class="line">        <span class="keyword">while</span> (low &lt;= high) &#123;</span><br><span class="line">            <span class="keyword">int</span> mid = (low + high) &gt;&gt;&gt; <span class="number">1</span>;</span><br><span class="line">            <span class="keyword">int</span> midVal = matrix[mid / n][mid % n];</span><br><span class="line">            <span class="keyword">if</span> (midVal &lt; target) &#123;</span><br><span class="line">                low = mid + <span class="number">1</span>;</span><br><span class="line">            &#125; <span class="keyword">else</span> <span class="keyword">if</span> (midVal &gt; target) &#123;</span><br><span class="line">                high = mid - <span class="number">1</span>;</span><br><span class="line">            &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">                <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">            &#125;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1261,7 +1300,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">25</span>
+          <span class="site-state-item-count">26</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
