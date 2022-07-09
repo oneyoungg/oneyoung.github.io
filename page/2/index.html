@@ -518,6 +518,86 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://oneyoung.top/%E8%B8%A9%E5%9D%91-spring%E4%BA%8B%E5%8A%A1%E5%A4%B1%E6%95%88/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="oneyoung">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="无涯">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/%E8%B8%A9%E5%9D%91-spring%E4%BA%8B%E5%8A%A1%E5%A4%B1%E6%95%88/" class="post-title-link" itemprop="url">踩坑-spring事务失效</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2021-08-11 10:14:05" itemprop="dateCreated datePublished" datetime="2021-08-11T10:14:05+08:00">2021-08-11</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2022-07-09 11:35:37" itemprop="dateModified" datetime="2022-07-09T11:35:37+08:00">2022-07-09</time>
+              </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="背景"><a href="#背景" class="headerlink" title="背景"></a>背景</h2><p>有个多层业务，在进行新增操作的时候，需要操作多张表，然后是多段提交，分别执行了三条SQL。其中两条SQL是抽取的公共方法执行的。在线上环境发现，执行后两条SQL出错，而前一条SQL并没有触发回滚。</p>
+<h2 id="排查"><a href="#排查" class="headerlink" title="排查"></a>排查</h2><p>我确认自己是开启了事务的，使用基于注解的声明式事务配置。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Service</span></span><br><span class="line"><span class="meta">@Transactional(rollbackFor = Exception.class)</span></span><br><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">ContentProduceServiceImpl</span> <span class="keyword">implements</span> <span class="title">ContentProduceService</span> </span>&#123;</span><br><span class="line">  <span class="comment">// ...</span></span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>注解<code>@Transactional</code>标注在类上面，类的<code>public</code>方法会默认继承这个注解，也就是会开启事务控制。同时我也指定了回滚的超类异常<code>Exception</code>，遇到异常会正常回滚才对。</p>
+<p>于是我进行了单元测试，确认后两条SQL执行出现了异常，而且异常被<code>spring</code>包装成了<code>RuntimeException</code>，然而并没有触发回滚。</p>
+<figure class="highlight plain"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">Caused by: com.mysql.cj.jdbc.exceptions.MysqlDataTruncation: Data truncation: Data too long for column &#39;name&#39; at row 1</span><br><span class="line">	at com.mysql.cj.jdbc.exceptions.SQLExceptionsMapping.translateException(SQLExceptionsMapping.java:104)</span><br></pre></td></tr></table></figure>
+<p>思来想去，突然<strong>灵感一闪</strong>！那肯定是事务管理器没有捕获这个异常，被我写的异常以及日志AOP先拦截处理掉了。</p>
+<blockquote>
+<p>Spring的声明式事务是基于切面编程实现的，在Spring里里面是使用ASPECT实现的AOP。</p>
+</blockquote>
+<h2 id="解决"><a href="#解决" class="headerlink" title="解决"></a>解决</h2><h3 id="方案一：去掉异常处理AOP"><a href="#方案一：去掉异常处理AOP" class="headerlink" title="方案一：去掉异常处理AOP"></a>方案一：去掉异常处理AOP</h3><p>最简单粗暴的方法就是直接去掉异常处理的AOP</p>
+<p>再去掉自定义的AOP后，顺利抛出异常，线程中止，事务成功回滚。缺点是没了自定义的异常处理。</p>
+<h3 id="方案二：遇到异常手动回滚"><a href="#方案二：遇到异常手动回滚" class="headerlink" title="方案二：遇到异常手动回滚"></a>方案二：遇到异常手动回滚</h3><p>这种方案既能手动捕获异常进行异常处理，也能回滚事务。能解决方案一的痛点。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@Override</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> Result&lt;Boolean&gt; <span class="title">createContent</span><span class="params">(ContentProduceShowDTO dto)</span> </span>&#123;</span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">      <span class="comment">// do...</span></span><br><span class="line">    &#125; <span class="keyword">catch</span> (Exception exception) &#123;</span><br><span class="line">      <span class="comment">// 获取当前线程的事务，进行手动回滚</span></span><br><span class="line">        TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();</span><br><span class="line">        <span class="keyword">return</span> Results.failSystemError(exception.getCause().getMessage());</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>获取当前线程的事务，进行手动回滚，需要注意的是，要保证当前方法开启了事务，不然会抛出<code>NoTransactionException</code>异常。</p>
+<h3 id="方案三：在异常AOP里面处理异常回滚"><a href="#方案三：在异常AOP里面处理异常回滚" class="headerlink" title="方案三：在异常AOP里面处理异常回滚"></a>方案三：在异常AOP里面处理异常回滚</h3><p>在异常AOP里面处理异常回滚，相比方案二，不用写重复的冗余代码。也更合理。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> Object <span class="title">processService0</span><span class="params">(ProceedingJoinPoint joinPoint)</span> </span>&#123;</span><br><span class="line">    printEntranceLog(joinPoint);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">long</span> startTime = System.currentTimeMillis();</span><br><span class="line">    Result&lt;Object&gt; result = <span class="keyword">null</span>;</span><br><span class="line">    Throwable throwable = <span class="keyword">null</span>;</span><br><span class="line">    <span class="comment">// 只能处理这一类返回值类型的</span></span><br><span class="line">    <span class="keyword">try</span> &#123;</span><br><span class="line">        Object object = joinPoint.proceed();</span><br><span class="line">        <span class="keyword">if</span> (object <span class="keyword">instanceof</span> Result) &#123;</span><br><span class="line">            result = (Result&lt;Object&gt;) object;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> object;</span><br><span class="line">    &#125; <span class="keyword">catch</span> (Throwable e) &#123;</span><br><span class="line">      <span class="comment">// do..</span></span><br><span class="line">        <span class="keyword">try</span> &#123;</span><br><span class="line">             TransactionAspectSupport.currentTransactionStatus().setRollbackOnly();</span><br><span class="line">        &#125; <span class="keyword">catch</span> (Exception exception) &#123;</span><br><span class="line">            <span class="keyword">return</span> result;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">return</span> result;</span><br><span class="line">    &#125; <span class="keyword">finally</span> &#123;</span><br><span class="line">      <span class="comment">// do...</span></span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
     <link itemprop="mainEntityOfPage" href="https://oneyoung.top/SpringApplication-run%E5%8F%91%E7%94%9F%E4%BA%86%E4%BB%80%E4%B9%88/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -1369,95 +1449,6 @@
   
   
 
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
-    <link itemprop="mainEntityOfPage" href="https://oneyoung.top/%E7%9B%AE%E5%BD%95%E8%AE%BE%E8%AE%A1%E4%B9%8B%E2%80%94%E9%82%BB%E6%8E%A5%E8%A1%A8/">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="oneyoung">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="无涯">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/%E7%9B%AE%E5%BD%95%E8%AE%BE%E8%AE%A1%E4%B9%8B%E2%80%94%E9%82%BB%E6%8E%A5%E8%A1%A8/" class="post-title-link" itemprop="url">目录设计之—邻接表</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">发表于</span>
-
-              <time title="创建时间：2021-03-15 22:08:52" itemprop="dateCreated datePublished" datetime="2021-03-15T22:08:52+08:00">2021-03-15</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">更新于</span>
-                <time title="修改时间：2021-08-01 14:13:47" itemprop="dateModified" datetime="2021-08-01T14:13:47+08:00">2021-08-01</time>
-              </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>目录在日常开发中是一种非常常见的需求，今天我们来详细讨论下一种实现方案，以及查询思路。</p>
-<h2 id="设计思路"><a href="#设计思路" class="headerlink" title="设计思路"></a>设计思路</h2><p>目录其实就是一种树形结构，子目录与父目录形成一种父子关系，所以很自然 的想到维护他们这种关系就能实现了。</p>
-<h3 id="数据库设计"><a href="#数据库设计" class="headerlink" title="数据库设计"></a>数据库设计</h3><figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">create</span> <span class="keyword">table</span> tree_node</span><br><span class="line">(</span><br><span class="line">	id <span class="type">bigint</span> <span class="keyword">not</span> <span class="keyword">null</span> comment <span class="string">&#x27;主键id&#x27;</span></span><br><span class="line">		<span class="keyword">primary</span> <span class="keyword">key</span>,</span><br><span class="line">	parent <span class="type">bigint</span> <span class="keyword">null</span> comment <span class="string">&#x27;父节点(root节点为0)&#x27;</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
-<ul>
-<li><code>parent</code>存储父子关系</li>
-<li>这种设计很直观，也最容易理解，专业术语成为<code>邻接表</code></li>
-<li>唯一的缺点是在做修改、删除的时候比较麻烦，建议在确定结构后不要再修改目录结构</li>
-</ul>
-<h3 id="树节点"><a href="#树节点" class="headerlink" title="树节点"></a>树节点</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TreeNode</span>&lt;<span class="title">T</span>&gt; </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 节点ID</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">private</span> Long id;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 节点数据</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">private</span> T date;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 节点父节点ID</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">private</span> Long parent;</span><br><span class="line"></span><br><span class="line">    <span class="comment">/**</span></span><br><span class="line"><span class="comment">     * 孩子节点</span></span><br><span class="line"><span class="comment">     */</span></span><br><span class="line">    <span class="keyword">private</span> List&lt;TreeNode&lt;T&gt;&gt; child;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">addChild</span><span class="params">(TreeNode&lt;T&gt; node)</span> </span>&#123;</span><br><span class="line">        <span class="keyword">if</span> (CollectionUtils.isEmpty(<span class="keyword">this</span>.child)) &#123;</span><br><span class="line">            <span class="keyword">this</span>.child = <span class="keyword">new</span> ArrayList&lt;&gt;();</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">this</span>.child.add(node);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="comment">// Get Set ...</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-<h2 id="常见需求"><a href="#常见需求" class="headerlink" title="常见需求"></a>常见需求</h2><h3 id="生成树"><a href="#生成树" class="headerlink" title="生成树"></a>生成树</h3><p>根据节点列表生成树</p>
-<ul>
-<li>给列表根据<code>id</code>建立索引</li>
-<li>遍历列表，将自己加入父节点的孩子列表，  形成父子关系</li>
-<li>建立一个<code>ROOT</code>节点作为根节点，将一级目录放在根节点下</li>
-</ul>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 生成树</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> nodes 所有节点</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span> tree</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> &lt;T&gt; <span class="function">TreeNode&lt;T&gt; <span class="title">tree</span><span class="params">(List&lt;TreeNode&lt;T&gt;&gt; nodes)</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 建立索引</span></span><br><span class="line">    Map&lt;Long, TreeNode&lt;T&gt;&gt; map = nodes.stream().collect(Collectors.toMap(TreeNode::getId, item -&gt; item));</span><br><span class="line">    <span class="comment">// ROOT 节点</span></span><br><span class="line">    TreeNode&lt;T&gt; root = <span class="keyword">new</span> TreeNode&lt;&gt;();</span><br><span class="line">    <span class="keyword">for</span> (TreeNode&lt;T&gt; node : nodes) &#123;</span><br><span class="line">        <span class="keyword">if</span> (node.getParent() == <span class="keyword">null</span> || node.getParent() == <span class="number">0</span>) &#123;</span><br><span class="line">            root.addChild(node);</span><br><span class="line">        &#125; <span class="keyword">else</span> &#123;</span><br><span class="line">            Long parent = node.getParent();</span><br><span class="line">            map.get(parent).addChild(node);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> root;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-<h3 id="获取树的某个节点"><a href="#获取树的某个节点" class="headerlink" title="获取树的某个节点"></a>获取树的某个节点</h3><p>由于是目录设计，这里采用广度优先遍历，优先遍历上层目录</p>
-<ul>
-<li>使用队列实现的广度优先遍历</li>
-</ul>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 获取节点 采用广度优先遍历</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> id   节点id</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> tree 树</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@return</span> result</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> &lt;T&gt; <span class="function">TreeNode&lt;T&gt; <span class="title">getNode</span><span class="params">(<span class="keyword">long</span> id, TreeNode&lt;T&gt; tree)</span> </span>&#123;</span><br><span class="line">    Queue&lt;TreeNode&lt;T&gt;&gt; queue = <span class="keyword">new</span> LinkedBlockingQueue&lt;&gt;();</span><br><span class="line">    queue.add(tree);</span><br><span class="line">    <span class="keyword">while</span> (!queue.isEmpty()) &#123;</span><br><span class="line">        TreeNode&lt;T&gt; node = queue.poll();</span><br><span class="line">        <span class="keyword">if</span> (Objects.equals(node.getId(), id)) &#123;</span><br><span class="line">            <span class="keyword">return</span> node;</span><br><span class="line">        &#125;</span><br><span class="line">        <span class="keyword">if</span> (!CollectionUtils.isEmpty(node.getChild())) &#123;</span><br><span class="line">            queue.addAll(node.getChild());</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">null</span>;</span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
-<h3 id="获取所有节点"><a href="#获取所有节点" class="headerlink" title="获取所有节点"></a>获取所有节点</h3><p>有时候需要获取某个节点下面的全部节点信息，例如在做搜索的时候就有这个需求</p>
-<ul>
-<li>这里采用深度优先遍历所有节点</li>
-</ul>
-<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">/**</span></span><br><span class="line"><span class="comment"> * 深度优先遍历获取所有节点</span></span><br><span class="line"><span class="comment"> *</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> tree 树</span></span><br><span class="line"><span class="comment"> * <span class="doctag">@param</span> list 节点列表</span></span><br><span class="line"><span class="comment"> */</span></span><br><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> &lt;T&gt; <span class="function"><span class="keyword">void</span> <span class="title">getAllTreeNode</span><span class="params">(TreeNode&lt;T&gt; tree, List&lt;TreeNode&lt;T&gt;&gt; list)</span> </span>&#123;</span><br><span class="line">    list.add(tree);</span><br><span class="line">    List&lt;TreeNode&lt;T&gt;&gt; child = tree.getChild();</span><br><span class="line">    <span class="keyword">if</span> (!CollectionUtils.isEmpty(child)) &#123;</span><br><span class="line">        <span class="keyword">for</span> (TreeNode&lt;T&gt; node : child) &#123;</span><br><span class="line">            getAllTreeNode(node, list);</span><br><span class="line">        &#125;</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
 
   
   <nav class="pagination">
@@ -1527,7 +1518,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">28</span>
+          <span class="site-state-item-count">29</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
