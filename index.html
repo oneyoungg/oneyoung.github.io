@@ -181,7 +181,7 @@
               <span class="post-meta-item-text">发表于</span>
               
 
-              <time title="创建时间：2022-07-09 11:18:50 / 修改时间：11:40:14" itemprop="dateCreated datePublished" datetime="2022-07-09T11:18:50+08:00">2022-07-09</time>
+              <time title="创建时间：2022-07-09 11:18:50 / 修改时间：11:47:17" itemprop="dateCreated datePublished" datetime="2022-07-09T11:18:50+08:00">2022-07-09</time>
             </span>
 
           
@@ -204,10 +204,9 @@
 </li>
 <li><p>task 的提交与调度</p>
 <p>其中，后两部分是 pool 的“精髓”所在，这两部分的原理我也用一张图表示了出来:</p>
+<p><img src="/%E6%89%8B%E5%86%99%E4%B8%80%E4%B8%AA%E8%BD%BB%E9%87%8F%E7%BA%A7GoRutine-Pool%E7%BA%BF%E7%A8%8B%E6%B1%A0/image-20220709105139774-7335101.png"></p>
 </li>
 </ol>
-<img src="手写一个轻量级GoRutine-Pool线程池/image-20220709105139774-7335101-7338003.png" style="zoom:40%;" />
-
 <p>我们先看一下图中 pool 对 worker 的管理。</p>
 <p>capacity 是 pool 的一个属性，代表整个 pool 中 worker 的最大容量。我们使用一个带缓 冲的 channel:active，作为 worker 的“计数器”</p>
 <p>当 active channel 可写时，我们就创建一个 worker，用于处理用户通过 Schedule 函数 提交的待处理的请求。当 active channel 满了的时候，pool 就会停止 worker 的创建，直 到某个 worker 因故退出，active channel 又空出一个位置时，pool 才会创建新的 worker 填补那个空位。</p>
