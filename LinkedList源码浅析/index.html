@@ -27,13 +27,13 @@
 <meta property="og:site_name" content="无涯">
 <meta property="og:description" content="前言LinkedList使用频率相较ArrayList不高，但也值得探讨一下。适合集合高频次修改时采用。 介绍 与ArrayList不同,LinkedList是对List和Deque接口的双向链表实现。实现所有可选的列表操作，并允许所有元素（包括null）。 所有操作的执行都与双链接列表的预期一样。索引到列表中的操作将从开始或结束遍历列表，以更接近指定索引的为准。 请注意，此实现是不同步的。如果多">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://oneyoung.top/LinkedList%E6%BA%90%E7%A0%81%E6%B5%85%E6%9E%90/image-20211022113802124-4873883.png">
+<meta property="og:image" content="https://oneyoung.top/LinkedList%E6%BA%90%E7%A0%81%E6%B5%85%E6%9E%90/LinkedList%E6%BA%90%E7%A0%81%E6%B5%85%E6%9E%90/image-20211022113802124-4873883.png">
 <meta property="article:published_time" content="2021-10-22T03:19:06.000Z">
 <meta property="article:modified_time" content="2021-10-22T06:50:08.738Z">
 <meta property="article:author" content="oneyoung">
 <meta property="article:tag" content="jdk">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://oneyoung.top/LinkedList%E6%BA%90%E7%A0%81%E6%B5%85%E6%9E%90/image-20211022113802124-4873883.png">
+<meta name="twitter:image" content="https://oneyoung.top/LinkedList%E6%BA%90%E7%A0%81%E6%B5%85%E6%9E%90/LinkedList%E6%BA%90%E7%A0%81%E6%B5%85%E6%9E%90/image-20211022113802124-4873883.png">
 
 <link rel="canonical" href="https://oneyoung.top/LinkedList%E6%BA%90%E7%A0%81%E6%B5%85%E6%9E%90/">
 
@@ -202,7 +202,7 @@
 
       
         <h2 id="前言"><a href="#前言" class="headerlink" title="前言"></a>前言</h2><p>LinkedList使用频率相较<code>ArrayList</code>不高，但也值得探讨一下。适合集合高频次修改时采用。</p>
-<h2 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h2><p><img src="/LinkedList%E6%BA%90%E7%A0%81%E6%B5%85%E6%9E%90/image-20211022113802124-4873883.png" alt="image-20211022113802124"></p>
+<h2 id="介绍"><a href="#介绍" class="headerlink" title="介绍"></a>介绍</h2><p><img src="LinkedList%E6%BA%90%E7%A0%81%E6%B5%85%E6%9E%90/image-20211022113802124-4873883.png" alt="image-20211022113802124"></p>
 <p>与<code>ArrayList</code>不同,LinkedList是对List和Deque接口的<strong>双向链表实现</strong>。实现所有可选的列表操作，并允许所有元素（包括null）。 所有操作的执行都与双链接列表的预期一样。索引到列表中的操作将从开始或结束遍历列表，以更接近指定索引的为准。</p>
 <p>请注意，此实现是不同步的。如果多个线程同时访问一个链表，并且至少有一个线程在结构上修改链表，则必须在外部对其进行同步。（结构修改是添加或删除一个或多个元素的任何操作；仅设置元素的值不是结构修改。）这通常通过在自然封装列表的某个对象上进行同步来实现。如果不存在此类对象，则应使用<code>Collections.synchronizedList</code>方法“包装”列表。最好在创建时执行此操作，以防止意外不同步地访问列表：</p>
 <p><code>List list = Collections.synchronizedList(new LinkedList(...));</code></p>
@@ -334,7 +334,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">29</span>
+          <span class="site-state-item-count">28</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -346,7 +346,7 @@
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-count">10</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>

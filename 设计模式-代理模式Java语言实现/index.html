@@ -27,13 +27,13 @@
 <meta property="og:site_name" content="无涯">
 <meta property="og:description" content="前言关于代理模式的介绍，可以看我的另外一篇文章设计模式-代理模式。 这篇文章主要以代码演示Java语言的实现。 介绍代理又可以分为静态代理和动态代理两种，下面大概说下两者的主要区别  静态代理，被代理类必须基于接口实现，必须编写代理类，代理类与被代理类实现相同的接口。 动态代理 JDK，被代理类必须基于接口实现，不用编写代理实现，需要编写InvocationHandler实现 CgLib,可以代理">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://oneyoung.top/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F-%E4%BB%A3%E7%90%86%E6%A8%A1%E5%BC%8FJava%E8%AF%AD%E8%A8%80%E5%AE%9E%E7%8E%B0/image-20220102164025624-1112827.png">
+<meta property="og:image" content="https://oneyoung.top/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F-%E4%BB%A3%E7%90%86%E6%A8%A1%E5%BC%8FJava%E8%AF%AD%E8%A8%80%E5%AE%9E%E7%8E%B0/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F-%E4%BB%A3%E7%90%86%E6%A8%A1%E5%BC%8FJava%E8%AF%AD%E8%A8%80%E5%AE%9E%E7%8E%B0/image-20220102164025624-1112827.png">
 <meta property="article:published_time" content="2022-01-02T08:17:28.000Z">
 <meta property="article:modified_time" content="2022-03-24T12:26:49.039Z">
 <meta property="article:author" content="oneyoung">
 <meta property="article:tag" content="design-pattern">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://oneyoung.top/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F-%E4%BB%A3%E7%90%86%E6%A8%A1%E5%BC%8FJava%E8%AF%AD%E8%A8%80%E5%AE%9E%E7%8E%B0/image-20220102164025624-1112827.png">
+<meta name="twitter:image" content="https://oneyoung.top/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F-%E4%BB%A3%E7%90%86%E6%A8%A1%E5%BC%8FJava%E8%AF%AD%E8%A8%80%E5%AE%9E%E7%8E%B0/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F-%E4%BB%A3%E7%90%86%E6%A8%A1%E5%BC%8FJava%E8%AF%AD%E8%A8%80%E5%AE%9E%E7%8E%B0/image-20220102164025624-1112827.png">
 
 <link rel="canonical" href="https://oneyoung.top/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F-%E4%BB%A3%E7%90%86%E6%A8%A1%E5%BC%8FJava%E8%AF%AD%E8%A8%80%E5%AE%9E%E7%8E%B0/">
 
@@ -239,7 +239,7 @@
 <li>测试类</li>
 </ul>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">MainTest</span> </span>&#123;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        String filmName = <span class="string">&quot;中国医生&quot;</span>;</span><br><span class="line">        staticProxy(filmName);</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">staticProxy</span><span class="params">(String filmName)</span> </span>&#123;</span><br><span class="line">        Cinema proxyCinema = <span class="keyword">new</span> CinemaProxy();</span><br><span class="line">        proxyCinema.play(filmName);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
-<p><img src="/%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F-%E4%BB%A3%E7%90%86%E6%A8%A1%E5%BC%8FJava%E8%AF%AD%E8%A8%80%E5%AE%9E%E7%8E%B0/image-20220102164025624-1112827.png" alt="image-20220102164025624"></p>
+<p><img src="%E8%AE%BE%E8%AE%A1%E6%A8%A1%E5%BC%8F-%E4%BB%A3%E7%90%86%E6%A8%A1%E5%BC%8FJava%E8%AF%AD%E8%A8%80%E5%AE%9E%E7%8E%B0/image-20220102164025624-1112827.png" alt="image-20220102164025624"></p>
 <ul>
 <li>运行结果</li>
 </ul>
@@ -398,7 +398,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">29</span>
+          <span class="site-state-item-count">28</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -410,7 +410,7 @@
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-count">10</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>

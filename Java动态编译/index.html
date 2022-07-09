@@ -27,15 +27,15 @@
 <meta property="og:site_name" content="无涯">
 <meta property="og:description" content="前言我们都知道Java属于编译型语言,即源码需要经过编译成字节码然后运行于JVM 我们也知道，代码一旦编写完成，编译出的.class文件是一定的。这里也就是静态编译。 那我们需要在运行时编译并加载应该怎么办呢，存在如下场景  我们熟知的类似LeetCode这种测评平台，需要执行用户输入的代码。 服务器需要动态加载某些类文件进行编译。  那么我们就要使用Java的动态编译能力，在运行时编译代码并加载">
 <meta property="og:locale" content="zh_CN">
-<meta property="og:image" content="https://oneyoung.top/Java%E5%8A%A8%E6%80%81%E7%BC%96%E8%AF%91/%E6%9C%AA%E5%91%BD%E5%90%8D2.001-9747789-9747793.jpeg">
-<meta property="og:image" content="https://oneyoung.top/Java%E5%8A%A8%E6%80%81%E7%BC%96%E8%AF%91/image-20220412152021665-9748023.png">
-<meta property="og:image" content="https://oneyoung.top/Java%E5%8A%A8%E6%80%81%E7%BC%96%E8%AF%91/image-20220412160252209.png">
+<meta property="og:image" content="https://oneyoung.top/Java%E5%8A%A8%E6%80%81%E7%BC%96%E8%AF%91/Java%E5%8A%A8%E6%80%81%E7%BC%96%E8%AF%91/%E6%9C%AA%E5%91%BD%E5%90%8D2.001-9747789-9747793.jpeg">
+<meta property="og:image" content="https://oneyoung.top/Java%E5%8A%A8%E6%80%81%E7%BC%96%E8%AF%91/Java%E5%8A%A8%E6%80%81%E7%BC%96%E8%AF%91/image-20220412152021665-9748023.png">
+<meta property="og:image" content="https://oneyoung.top/Java%E5%8A%A8%E6%80%81%E7%BC%96%E8%AF%91/Java%E5%8A%A8%E6%80%81%E7%BC%96%E8%AF%91/image-20220412160252209.png">
 <meta property="article:published_time" content="2022-04-08T03:35:50.000Z">
 <meta property="article:modified_time" content="2022-04-12T08:35:08.028Z">
 <meta property="article:author" content="oneyoung">
 <meta property="article:tag" content="Java">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://oneyoung.top/Java%E5%8A%A8%E6%80%81%E7%BC%96%E8%AF%91/%E6%9C%AA%E5%91%BD%E5%90%8D2.001-9747789-9747793.jpeg">
+<meta name="twitter:image" content="https://oneyoung.top/Java%E5%8A%A8%E6%80%81%E7%BC%96%E8%AF%91/Java%E5%8A%A8%E6%80%81%E7%BC%96%E8%AF%91/%E6%9C%AA%E5%91%BD%E5%90%8D2.001-9747789-9747793.jpeg">
 
 <link rel="canonical" href="https://oneyoung.top/Java%E5%8A%A8%E6%80%81%E7%BC%96%E8%AF%91/">
 
@@ -230,12 +230,12 @@
 <li><p><code>DiagnosticListener</code> - 诊断信息监听器, 编译过程触发. 生成编译<code>task(JavaCompiler#getTask())</code>或获取<code>FileManager(JavaCompiler#getStandardFileManager())</code>时需要传递<code>DiagnosticListener</code>以便收集诊断信息</p>
 </li>
 </ul>
-<h3 id="流程图"><a href="#流程图" class="headerlink" title="流程图"></a>流程图</h3><p><img src="/Java%E5%8A%A8%E6%80%81%E7%BC%96%E8%AF%91/%E6%9C%AA%E5%91%BD%E5%90%8D2.001-9747789-9747793.jpeg" alt="未命名2.001"></p>
+<h3 id="流程图"><a href="#流程图" class="headerlink" title="流程图"></a>流程图</h3><p><img src="Java%E5%8A%A8%E6%80%81%E7%BC%96%E8%AF%91/%E6%9C%AA%E5%91%BD%E5%90%8D2.001-9747789-9747793.jpeg" alt="未命名2.001"></p>
 <h2 id="源码文件-gt-字节码文件"><a href="#源码文件-gt-字节码文件" class="headerlink" title="源码文件 -&gt; 字节码文件"></a>源码文件 -&gt; 字节码文件</h2><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">fromJavaFile</span><span class="params">()</span> </span>&#123;</span><br><span class="line">    <span class="comment">// 获取Javac编译器对象</span></span><br><span class="line">    JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();</span><br><span class="line">    <span class="comment">// 获取文件管理器：负责管理类文件的输入输出</span></span><br><span class="line">    StandardJavaFileManager fileManager = compiler.getStandardFileManager(<span class="keyword">null</span>, <span class="keyword">null</span>, <span class="keyword">null</span>);</span><br><span class="line">    <span class="comment">// 获取要被编译的Java源文件</span></span><br><span class="line">    File file = <span class="keyword">new</span> File(<span class="string">&quot;/Users/oneyoung/oneyoung/project/my/code/src/main/java/top/oneyoung/dynamic/TestHello.java&quot;</span>);</span><br><span class="line">    <span class="comment">// 通过源文件获取到要编译的Java类源码迭代器，包括所有内部类，其中每个类都是一个JavaFileObject</span></span><br><span class="line">    Iterable&lt;? extends JavaFileObject&gt; compilationUnits = fileManager.getJavaFileObjects(file);</span><br><span class="line">    <span class="comment">// 生成编译任务</span></span><br><span class="line">    JavaCompiler.CompilationTask task = compiler.getTask(<span class="keyword">null</span>, fileManager, <span class="keyword">null</span>, <span class="keyword">null</span>, <span class="keyword">null</span>, compilationUnits);</span><br><span class="line">    <span class="comment">// 执行编译任务</span></span><br><span class="line">    task.call();</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>我们这里准备了<code>TestHello.java</code></p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="class"><span class="keyword">class</span> <span class="title">TestHello</span> </span>&#123;</span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">main</span><span class="params">(String[] args)</span> </span>&#123;</span><br><span class="line">        System.out.println(<span class="string">&quot;this is a test&quot;</span>);</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>执行后在源文件同目录下生成了编译的class文件<code>HelloTest.class</code></p>
-<p><img src="/Java%E5%8A%A8%E6%80%81%E7%BC%96%E8%AF%91/image-20220412152021665-9748023.png" alt="image-20220412152021665"></p>
+<p><img src="Java%E5%8A%A8%E6%80%81%E7%BC%96%E8%AF%91/image-20220412152021665-9748023.png" alt="image-20220412152021665"></p>
 <p>我们试着手动加载该<code>class</code>文件，使用类加载器的<code>defineClass</code>方法，可以直接加载字节码文件。</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> Class&lt;?&gt; loadClassFromDisk(String path) <span class="keyword">throws</span> NoSuchMethodException, InvocationTargetException, IllegalAccessException &#123;</span><br><span class="line">    <span class="comment">// defineClass 为 ClassLoader 类的一个方法，用于加载类</span></span><br><span class="line">    <span class="comment">// 但是这个方法是 protected 的，所以需要通过反射的方式获取这个方法的权限</span></span><br><span class="line">    Class&lt;ClassLoader&gt; classLoaderClass = ClassLoader.class;</span><br><span class="line">    Method defineClass = classLoaderClass.getDeclaredMethod(<span class="string">&quot;defineClass&quot;</span>, <span class="keyword">byte</span>[].class, <span class="keyword">int</span>.class, <span class="keyword">int</span>.class);</span><br><span class="line">    defineClass.setAccessible(<span class="keyword">true</span>);</span><br><span class="line">    <span class="comment">// 读取文件系统的 file 为 byte 数组</span></span><br><span class="line">    File file = <span class="keyword">new</span> File(path);</span><br><span class="line">    <span class="keyword">byte</span>[] bytes = <span class="keyword">new</span> <span class="keyword">byte</span>[(<span class="keyword">int</span>) file.length()];</span><br><span class="line">    <span class="keyword">try</span> (FileInputStream fileInputStream = <span class="keyword">new</span> FileInputStream(file)) &#123;</span><br><span class="line">        fileInputStream.read(bytes);</span><br><span class="line">    &#125; <span class="keyword">catch</span> (IOException e) &#123;</span><br><span class="line">        e.printStackTrace();</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="comment">// 执行 defineClass 方法 返回 Class 对象</span></span><br><span class="line">    <span class="keyword">return</span> (Class&lt;?&gt;) defineClass.invoke(Thread.currentThread().getContextClassLoader(), bytes, <span class="number">0</span>, bytes.length);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
 <p>由于<code>TestHello</code>中的方法为静态方法，使用class反射机制执行方法</p>
@@ -247,7 +247,7 @@
 <p>则创建<code>JavaFileObject</code>对象时，变为了：</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 通过源代码字符串获取到要编译的Java类源码迭代器，包括所有内部类，其中每个类都是一个JavaFileObject</span></span><br><span class="line">SourceJavaFileObject javaFileObject = <span class="keyword">new</span> SourceJavaFileObject(<span class="string">&quot;TestHello&quot;</span>, <span class="string">&quot;public class TestHello &#123; public static void main(String[] args) &#123; System.out.println(\&quot;Hello World\&quot;); &#125; &#125;&quot;</span>);</span><br><span class="line"><span class="comment">// 生成编译任务</span></span><br><span class="line">JavaCompiler.CompilationTask task = compiler.getTask(<span class="keyword">null</span>, fileManager, <span class="keyword">null</span>, <span class="keyword">null</span>, <span class="keyword">null</span>, Collections.singleton(javaFileObject));</span><br></pre></td></tr></table></figure>
 <p>执行后，同样编译出了<code>class</code>文件，不过由于没有指定编译的<code>class</code>输出路径，他会默认放在源文件的根目录下</p>
-<p><img src="/Java%E5%8A%A8%E6%80%81%E7%BC%96%E8%AF%91/image-20220412160252209.png" alt="image-20220412160252209"></p>
+<p><img src="Java%E5%8A%A8%E6%80%81%E7%BC%96%E8%AF%91/image-20220412160252209.png" alt="image-20220412160252209"></p>
 <p>后面同样可以通过<code>defindClass</code>加载字节码完成加载。</p>
 <h2 id="源码字符串-gt-字节码数组"><a href="#源码字符串-gt-字节码数组" class="headerlink" title="源码字符串 -&gt; 字节码数组"></a>源码字符串 -&gt; 字节码数组</h2><p>如果我们进行动态编译时，想要直接输入源码字符串并且输出的是字节码数组，而不是输出字节码文件，又该如何实现？实际上，这是从内存中得到源码，再输出到内存的方式。</p>
 <p>在<code>getTask().call()</code>源代码执行流程图中，我们可以发现<code>JavaFileObject</code> 的 <code>openOutputStream()</code>方法控制了编译后字节码的输出行为,编译完成后会调用<code>openOutputStream</code>获取输出流,并写数据（字节码）。所以我们需要重写<code>JavaFileObject</code> 的 <code>openOutputStream()</code>方法。</p>
@@ -370,7 +370,7 @@
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">29</span>
+          <span class="site-state-item-count">28</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -382,7 +382,7 @@
       <div class="site-state-item site-state-tags">
             <a href="/tags/">
           
-        <span class="site-state-item-count">9</span>
+        <span class="site-state-item-count">10</span>
         <span class="site-state-item-name">标签</span></a>
       </div>
   </nav>
